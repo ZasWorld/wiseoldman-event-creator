@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171b24">
+  <meta name="description" content="Create Wise Old Man clan competitions from your phone or desktop.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="icon" href="./icon-192.png" type="image/png">
+  <link rel="stylesheet" href="./style.css">
+  <title>WiseOldMan Event Creator</title>
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <div class="mark" aria-hidden="true">W</div>
+      <div><h1>WiseOldMan Event Creator</h1><p>Create clan competitions from anywhere</p></div>
+    </header>
+    <nav class="tabs" aria-label="App sections">
+      <button class="tab active" data-tab="create">Create event</button>
+      <button class="tab" data-tab="pick">Pick event</button>
+      <button class="tab" data-tab="config">Configuration</button>
+    </nav>
+
+    <section class="panel active" id="create">
+      <h2>Create an event</h2>
+      <form id="event-form">
+        <label>Event title<input id="title" required maxlength="100" placeholder="e.g. VB SoTW - Woodcutting"></label>
+        <div class="two">
+          <label>Event type<select id="kind"></select></label>
+          <label>Category<select id="metric"></select></label>
+        </div>
+        <div class="two">
+          <label>Starts (your local time)<input id="starts" type="datetime-local" required></label>
+          <label>Ends (your local time)<input id="ends" type="datetime-local" required></label>
+        </div>
+        <label>Wise Old Man group ID<input id="groupId" inputmode="numeric" required placeholder="Group ID"></label>
+        <label>Group verification code<input id="verification" type="password" required autocomplete="off" placeholder="Verification code"></label>
+        <p class="hint">Dates and times use this device’s local timezone. Your group settings are saved only in this browser.</p>
+        <button class="primary" id="submit" type="submit">Create competition</button>
+      </form>
+      <div id="result" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" id="pick">
+      <h2>Pick an event</h2>
+      <p>Choose a weekly event type, then draw a matching skill or boss.</p>
+      <div class="pick-actions"><button class="primary" id="draw">Draw event</button><button class="secondary" id="use-draw" disabled>Use this title</button></div>
+      <div class="draw-card" id="draw-card"><span class="eyebrow">YOUR RANDOM EVENT</span><strong id="drawn">Ready when you are</strong></div>
+    </section>
+
+    <section class="panel" id="config">
+      <h2>Configuration</h2>
+      <p>Save your group details on this device so you don’t need to enter them each time.</p>
+      <label>Wise Old Man group ID<input id="savedGroup" inputmode="numeric" placeholder="Group ID"></label>
+      <label>Group verification code<input id="savedVerification" type="password" autocomplete="off" placeholder="Verification code"></label>
+      <button class="primary" id="save-config">Save settings</button>
+      <div id="config-result" role="status" aria-live="polite"></div>
+      <p class="hint">Settings stay in this browser’s local storage. The verification code is not encrypted separately. It is only sent to Wise Old Man over HTTPS when you create an event.</p>
+    </section>
+    <footer>WiseOldMan Event Creator <span>Made by Its Za</span></footer>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
