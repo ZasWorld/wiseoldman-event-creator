@@ -25,9 +25,10 @@ is not encrypted separately. It is not included in this public source package; t
 web app sends it to Wise Old Man over HTTPS when you submit an event. Only publish
 the app files to a repository you are comfortable making public.
 
-The event picker draws a random skill or boss and creates titles such as
-"SoTW - Woodcutting" and "BoTW - Nex". Dates and times use the device's local
-timezone.
+The event picker scrolls through one combined list of skills and bosses. SoTW
+and BoTW each have a 50/50 chance, then a matching skill or boss is drawn. Titles
+look like "SoTW - Woodcutting" and "BoTW - Nex". Dates and times use the device's
+local timezone.
 
 Wise Old Man API documentation:
 https://docs.wiseoldman.net/api/competitions/competition-endpoints

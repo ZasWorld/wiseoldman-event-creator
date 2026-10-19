@@ -45,9 +45,10 @@
 
     <section class="panel" id="pick">
       <h2>Pick an event</h2>
-      <p>Choose a weekly event type, then draw a matching skill or boss.</p>
-      <div class="pick-actions"><button class="primary" id="draw">Draw event</button><button class="secondary" id="use-draw" disabled>Use this title</button></div>
-      <div class="draw-card" id="draw-card"><span class="eyebrow">YOUR RANDOM EVENT</span><strong id="drawn">Ready when you are</strong></div>
+      <p id="pick-status">Rows show SoTW or BoTW. Each event type has a 50/50 chance. Spin once to choose.</p>
+      <div class="picker-window" aria-label="Random event selector" aria-live="polite"><div class="picker-strip" id="picker-strip"></div><div class="picker-highlight" aria-hidden="true"></div></div>
+      <div class="draw-card"><span class="eyebrow">YOUR RANDOM EVENT</span><strong id="drawn">Ready when you are</strong></div>
+      <div class="pick-actions"><button class="primary" id="draw">Spin for an event</button><button class="secondary" id="use-draw" disabled>Use this event</button></div>
     </section>
 
     <section class="panel" id="config">
