@@ -1,12 +1,12 @@
 {
-  "name": "WiseOldMan Event Creator",
-  "short_name": "WOM Events",
-  "description": "Create Wise Old Man clan competitions.",
+  "name": "WoM Clan Manager",
+  "short_name": "WoM Clan Manager",
+  "description": "Create clan events, manage members, and follow Wise Old Man competitions.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#10131a",
-  "theme_color": "#171b24",
+  "background_color": "#10131b",
+  "theme_color": "#10131b",
   "icons": [
     {"src":"./icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
     {"src":"./icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}

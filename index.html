@@ -3,65 +3,130 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#171b24">
-  <meta name="description" content="Create Wise Old Man clan competitions from your phone or desktop.">
+  <meta name="theme-color" content="#10131b">
+  <meta name="apple-mobile-web-app-title" content="WoM Clan Manager">
+  <meta name="description" content="Create Wise Old Man clan events, manage your roster, and follow competition standings.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="icon" href="./icon-192.png" type="image/png">
   <link rel="stylesheet" href="./style.css">
-  <title>WiseOldMan Event Creator</title>
+  <title>WoM Clan Manager</title>
 </head>
 <body>
-  <main class="shell">
-    <header class="top">
-      <img class="mark" src="./apple-touch-icon.png" alt="" aria-hidden="true">
-      <div><h1>WiseOldMan Event Creator</h1><p>Create clan competitions from anywhere</p></div>
-    </header>
-    <nav class="tabs" aria-label="App sections">
-      <button class="tab active" data-tab="create">Create event</button>
-      <button class="tab" data-tab="pick">Pick event</button>
-      <button class="tab" data-tab="config">Configuration</button>
-    </nav>
+  <div class="app-shell">
+    <aside class="rail">
+      <a class="brand" href="#create" aria-label="WoM Clan Manager home">
+        <img src="./apple-touch-icon.png" alt="">
+        <span><b>WoM Clan Manager</b><small>WISE OLD MAN</small></span>
+      </a>
+      <nav class="nav" aria-label="App sections">
+        <button class="nav-item active" data-view="create"><span class="nav-icon">✦</span><span>Create event</span></button>
+        <button class="nav-item" data-view="pick"><span class="nav-icon">⟳</span><span>Event picker</span></button>
+        <button class="nav-item" data-view="members"><span class="nav-icon">♟</span><span>Clan members</span></button>
+        <button class="nav-item" data-view="events"><span class="nav-icon">▤</span><span>Competitions</span></button>
+        <button class="nav-item" data-view="config"><span class="nav-icon">⚙</span><span>Configuration</span></button>
+      </nav>
+      <div class="rail-bottom"><span class="connection-dot"></span><span id="connection-label">Not connected</span></div>
+    </aside>
 
-    <section class="panel active" id="create">
-      <h2>Create an event</h2>
-      <form id="event-form">
-        <label>Event title<input id="title" required maxlength="100" placeholder="e.g. VB SoTW - Woodcutting"></label>
-        <div class="two">
-          <label>Event type<select id="kind"></select></label>
-          <label>Category<select id="metric"></select></label>
+    <main class="main-area">
+      <header class="mobile-header">
+        <img src="./apple-touch-icon.png" alt="">
+        <div><b>WoM Clan Manager</b><small>WISE OLD MAN</small></div>
+        <span class="mobile-connection" id="mobile-connection" aria-label="Connection status"></span>
+      </header>
+      <div class="workspace">
+        <div class="page-heading">
+          <div><p class="overline">CLAN TOOLS</p><h1 id="page-title">Create an event</h1><p id="page-subtitle">Set up your next clan competition.</p></div>
+          <div class="group-chip" id="group-chip"><span class="chip-dot"></span><span id="active-group-name">No group selected</span></div>
         </div>
-        <div class="two">
-          <label>Starts (your local time)<input id="starts" type="datetime-local" required></label>
-          <label>Ends (your local time)<input id="ends" type="datetime-local" required></label>
-        </div>
-        <label>Wise Old Man group ID<input id="groupId" inputmode="numeric" required placeholder="Group ID"></label>
-        <label>Group verification code<input id="verification" type="password" required autocomplete="off" placeholder="Verification code"></label>
-        <p class="hint">Dates and times use this device’s local timezone. Your group settings are saved only in this browser.</p>
-        <button class="primary" id="submit" type="submit">Create competition</button>
-      </form>
-      <div id="result" role="status" aria-live="polite"></div>
-    </section>
 
-    <section class="panel" id="pick">
-      <h2>Pick an event</h2>
-      <p id="pick-status">Rows show SoTW or BoTW. Each event type has a 50/50 chance. Spin once to choose.</p>
-      <div class="picker-window" aria-label="Random event selector" aria-live="polite"><div class="picker-strip" id="picker-strip"></div><div class="picker-highlight" aria-hidden="true"></div></div>
-      <div class="draw-card"><span class="eyebrow">YOUR RANDOM EVENT</span><strong id="drawn">Ready when you are</strong></div>
-      <div class="pick-actions"><button class="primary" id="draw">Spin for an event</button><button class="secondary" id="use-draw" disabled>Use this event</button></div>
-    </section>
+        <section class="view active" id="view-create" aria-labelledby="page-title">
+          <div class="create-grid">
+            <article class="surface form-surface">
+              <div class="surface-heading"><div><p class="overline">NEW COMPETITION</p><h2>Event details</h2></div><span class="heading-mark">01</span></div>
+              <form id="event-form" class="form-grid">
+                <label class="field full">Competition title<input id="title" required maxlength="100" placeholder="e.g. VB SoTW - Woodcutting"></label>
+                <label class="field">Event category<select id="kind"></select></label>
+                <label class="field">Subcategory<select id="metric"></select></label>
+                <label class="field">Starts in your local time<input id="starts" type="datetime-local" required></label>
+                <label class="field">Ends in your local time<input id="ends" type="datetime-local" required></label>
+                <p class="field-note full">Your device’s timezone is used automatically. Choose dates from the calendar controls.</p>
+                <button class="button primary full" id="submit" type="submit"><span>Create competition</span><span aria-hidden="true">↗</span></button>
+              </form>
+              <div class="status-box" id="result" role="status" aria-live="polite"></div>
+            </article>
+            <aside class="side-stack">
+              <article class="surface group-summary"><p class="overline">PUBLISHING TO</p><div class="summary-name"><span class="group-emblem">W</span><div><b id="summary-group-name">Choose a group</b><small id="summary-group-id">in Configuration</small></div></div><button class="text-button" data-open-view="config">Manage group settings <span>→</span></button></article>
+              <article class="surface quick-note"><span class="note-icon">✦</span><div><b>Ready for the next challenge?</b><p>Pick a random skill or boss event and send it straight to this form.</p><button class="text-button" data-open-view="pick">Open event picker <span>→</span></button></div></article>
+              <article class="mini-stat"><span class="mini-stat-icon">⌁</span><div><small>COMPETITION TIMES</small><b>Local to your device</b></div></article>
+            </aside>
+          </div>
+        </section>
 
-    <section class="panel" id="config">
-      <h2>Configuration</h2>
-      <p>Save your group details on this device so you don’t need to enter them each time.</p>
-      <label>Wise Old Man group ID<input id="savedGroup" inputmode="numeric" placeholder="Group ID"></label>
-      <label>Group verification code<input id="savedVerification" type="password" autocomplete="off" placeholder="Verification code"></label>
-      <button class="primary" id="save-config">Save settings</button>
-      <div id="config-result" role="status" aria-live="polite"></div>
-      <p class="hint">Settings stay in this browser’s local storage. The verification code is not encrypted separately. It is only sent to Wise Old Man over HTTPS when you create an event.</p>
-    </section>
-    <footer>WiseOldMan Event Creator <span>Made by Its Za</span></footer>
-  </main>
+        <section class="view" id="view-pick" aria-labelledby="page-title">
+          <div class="picker-layout">
+            <article class="surface picker-surface">
+              <div class="surface-heading"><div><p class="overline">RANDOM EVENT</p><h2>What will the clan take on?</h2></div><span class="heading-mark">02</span></div>
+              <p class="surface-copy">One spin picks from every eligible skill and boss. Skills and bosses each have an even chance.</p>
+              <div class="exclusions" id="exclusions">
+                <div class="exclusions-head"><b>Event filters</b><span>Choose what to leave out</span></div>
+                <div class="exclusion-grid">
+                  <div class="exclude-option"><input id="exclude-raids" type="checkbox" data-exclusion="raids"><label class="exclude-label" for="exclude-raids"><span class="checkmark"></span>Raids</label><button type="button" class="info-button" aria-label="What Raids excludes" data-tooltip="Chambers of Xeric and Challenge Mode, Theatre of Blood and Hard Mode, and Tombs of Amascut normal and expert.">i</button></div>
+                  <div class="exclude-option"><input id="exclude-slayer" type="checkbox" data-exclusion="slayer"><label class="exclude-label" for="exclude-slayer"><span class="checkmark"></span>Slayer-only bosses</label><button type="button" class="info-button" aria-label="What Slayer-only bosses excludes" data-tooltip="Abyssal Sire, Alchemical Hydra, Araxxor, Cerberus, Grotesque Guardians, Kraken, Thermonuclear Smoke Devil and Shellbane Gryphon.">i</button></div>
+                  <div class="exclude-option"><input id="exclude-hespori" type="checkbox" data-exclusion="hespori"><label class="exclude-label" for="exclude-hespori"><span class="checkmark"></span>Hespori</label><button type="button" class="info-button" aria-label="What Hespori excludes" data-tooltip="Excludes Hespori.">i</button></div>
+                  <div class="exclude-option"><input id="exclude-mimic" type="checkbox" data-exclusion="mimic"><label class="exclude-label" for="exclude-mimic"><span class="checkmark"></span>Mimic</label><button type="button" class="info-button" aria-label="What Mimic excludes" data-tooltip="Excludes the Mimic.">i</button></div>
+                  <div class="exclude-option"><input id="exclude-wilderness" type="checkbox" data-exclusion="wilderness"><label class="exclude-label" for="exclude-wilderness"><span class="checkmark"></span>Wilderness bosses</label><button type="button" class="info-button" aria-label="What Wilderness bosses excludes" data-tooltip="King Black Dragon, Callisto and Artio, Calvar’ion and Vet’ion, Scorpia, Chaos Elemental, Chaos Fanatic, Venenatis and Spindel, and Crazy Archaeologist.">i</button></div>
+                  <div class="exclude-option"><input id="exclude-hardmodes" type="checkbox" data-exclusion="hardmodes"><label class="exclude-label" for="exclude-hardmodes"><span class="checkmark"></span>All hardmodes</label><button type="button" class="info-button" aria-label="What All hardmodes excludes" data-tooltip="Chambers of Xeric Challenge Mode, Theatre of Blood Hard Mode, Corrupted Gauntlet, Tombs of Amascut Expert and Phosani’s Nightmare.">i</button></div>
+                  <div class="exclude-option"><input id="exclude-inferno" type="checkbox" data-exclusion="inferno"><label class="exclude-label" for="exclude-inferno"><span class="checkmark"></span>Inferno / Colosseum</label><button type="button" class="info-button" aria-label="What Inferno / Colosseum excludes" data-tooltip="TzKal-Zuk (Inferno) and Sol Heredit (Colosseum).">i</button></div>
+                </div>
+                <p class="pool-count" id="pool-count"></p>
+              </div>
+              <div class="spin-window" id="spin-window" aria-label="Scrolling random event selector" aria-live="polite"><div class="spin-list" id="picker-strip"></div><div class="spin-center" aria-hidden="true"></div></div>
+              <div class="draw-card"><span class="overline">SELECTED EVENT</span><strong id="drawn">Ready when you are</strong><small id="pick-status">Spin to choose a skill or boss event.</small></div>
+              <div class="button-row"><button class="button primary" id="draw"><span>Spin for an event</span><span>⟳</span></button><button class="button secondary" id="use-draw" disabled>Use this event</button></div>
+            </article>
+            <aside class="surface picker-side"><div class="side-icon">⚖</div><p class="overline">HOW THE DRAW WORKS</p><h3>Fair odds every spin</h3><p>Each skill and each boss left in the pool is shown once. Exclusions remove bosses from both the list and the draw.</p><div class="odds-row"><span>Skills</span><b>50%</b></div><div class="odds-row"><span>Eligible bosses</span><b>50%</b></div></aside>
+          </div>
+        </section>
+
+        <section class="view" id="view-members" aria-labelledby="page-title">
+          <article class="surface roster-surface">
+            <div class="surface-heading"><div><p class="overline">YOUR WISE OLD MAN GROUP</p><h2>Clan members <span class="count-pill" id="member-count">—</span></h2></div><button class="button secondary compact" id="refresh-members">↻ <span>Refresh</span></button></div>
+            <div class="roster-toolbar"><label class="search-field"><span>⌕</span><input id="member-search" type="search" placeholder="Find a member" aria-label="Find a member"></label><button class="button secondary compact" id="sort-members">Sort: Alphabetical <span>↕</span></button><button class="button primary compact" id="add-member">＋ <span>Add member</span></button></div>
+            <div class="roster-list" id="member-list" aria-live="polite"><div class="empty-state">Select a Wise Old Man group in Configuration, then refresh the roster.</div></div>
+            <div class="status-box" id="member-status" role="status" aria-live="polite"></div>
+          </article>
+        </section>
+
+        <section class="view" id="view-events" aria-labelledby="page-title">
+          <div class="events-toolbar surface"><div><p class="overline">CLAN ACTIVITY</p><h2>Upcoming &amp; ongoing events</h2><p>Tap an event to see its schedule and current top three.</p></div><div class="toolbar-actions"><button class="button secondary" id="refresh-events">↻ <span>Refresh events</span></button><button class="button primary" id="update-all">⇧ <span>Update members + standings</span></button></div></div>
+          <div class="event-columns"><section class="event-section"><div class="section-title"><h3>Upcoming</h3><span class="count-pill" id="upcoming-count">0</span></div><div class="event-list" id="upcoming-list"><div class="empty-state">Refresh to load events.</div></div></section><section class="event-section"><div class="section-title"><h3>Ongoing</h3><span class="count-pill" id="ongoing-count">0</span></div><div class="event-list" id="ongoing-list"><div class="empty-state">Refresh to load events.</div></div></section></div>
+          <div class="status-box" id="events-status" role="status" aria-live="polite"></div>
+          <div class="danger-dock" id="delete-dock" hidden><div><b id="selected-title">No event selected</b><small>Selected competition</small></div><button class="button danger" id="delete-event">Delete event</button></div>
+        </section>
+
+        <section class="view" id="view-config" aria-labelledby="page-title">
+          <div class="config-grid">
+            <article class="surface config-surface"><div class="surface-heading"><div><p class="overline">WISE OLD MAN</p><h2>Group connection</h2></div><span class="heading-mark">⚙</span></div><p class="surface-copy">Choose your clan and enter its verification code once. Both are remembered on this device.</p>
+              <label class="field">Search groups<input id="group-search" type="search" placeholder="Type your clan name"></label><button class="button secondary" id="search-groups">Search Wise Old Man <span>⌕</span></button>
+              <div id="group-results" class="group-results" aria-live="polite"></div>
+              <div class="selected-group-card" id="selected-group-card"><span class="group-emblem">W</span><div><small>SELECTED GROUP</small><b id="config-group-name">No group selected</b><span id="config-group-id">Search above to choose one</span></div><button id="clear-group" class="icon-button" aria-label="Clear selected group" title="Clear selected group">×</button></div>
+              <label class="field">Verification code<input id="verification" type="password" autocomplete="off" placeholder="Enter your group verification code"></label>
+              <div class="toggle-row"><div><b>Allow Wise Old Man requests</b><small>Needed to create events and manage the roster.</small></div><label class="switch"><input id="allow-requests" type="checkbox"><span></span></label></div>
+              <button class="button primary" id="save-config">Save configuration <span>✓</span></button><div class="status-box" id="config-result" role="status" aria-live="polite"></div>
+            </article>
+            <aside class="surface privacy-card"><div class="privacy-icon">⌑</div><p class="overline">YOUR DEVICE</p><h3>Credentials stay in this browser</h3><p>Your group ID and verification code are saved in this device’s browser storage, which is not encrypted separately. Requests go directly to Wise Old Man over HTTPS when you use the app.</p><button class="text-button" id="clear-credentials">Clear saved configuration <span>→</span></button><div class="privacy-foot"><span>↗</span> Wise Old Man API</div></aside>
+          </div>
+        </section>
+
+        <footer class="footer">WoM Clan Manager <span>Made by Its Za</span><span class="footer-divider">·</span><span>Built for clans</span></footer>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="member-dialog" class="dialog"><form method="dialog" id="member-dialog-form"><button class="dialog-close" aria-label="Close">×</button><p class="overline" id="member-dialog-kicker">CLAN ROSTER</p><h2 id="member-dialog-title">Add a member</h2><div id="member-dialog-fields"></div><div class="dialog-actions"><button class="button secondary" value="cancel">Cancel</button><button class="button primary" id="member-dialog-submit" value="submit">Continue</button></div></form></dialog>
+  <dialog id="confirm-dialog" class="dialog"><form method="dialog"><p class="overline">CONFIRM ACTION</p><h2 id="confirm-title">Continue?</h2><p id="confirm-copy"></p><div class="dialog-actions"><button class="button secondary" value="cancel">Cancel</button><button class="button danger" id="confirm-yes" value="yes">Confirm</button></div></form></dialog>
   <script src="./app.js"></script>
 </body>
 </html>

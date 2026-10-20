@@ -1,34 +1,37 @@
-WiseOldMan Event Creator
+WOM CLAN MANAGER
 Made by Its Za
 
-Create Wise Old Man clan competitions from a Java desktop app or an installable
-web app on iPhone and other devices.
+An installable web app for creating and managing Wise Old Man clan competitions
+from iPhone, desktop, or any modern browser.
 
-DESKTOP APP
-1. Double-click Launch.bat. Java 21 or newer is required.
-2. Open Configuration and enter your Wise Old Man group ID and verification code.
-3. Save the configuration, then create an event.
+FEATURES
+- Create skill and boss competitions with local date and time pickers.
+- Spin through the combined SoTW / BoTW event list, with the same exclusion
+  groups and balanced skill-versus-boss draw as the RuneLite plugin.
+- Search and select a Wise Old Man group.
+- View, search, and sort the clan roster alphabetically, by group role, or by
+  time in clan. Expand a member to see their role and tenure; add members,
+  remove members, and edit roles.
+- View upcoming and ongoing competitions, schedules, and current top-three
+  standings. Request a group-wide update, refresh standings, and delete events.
+- Install the app from Safari using Share > Add to Home Screen.
 
-WEB APP AND IPHONE
-The web app files are in this folder: index.html, app.js, style.css,
-manifest.webmanifest, sw.js and the PNG app icons. To use it as an installable iPhone app,
-publish this folder (or its contents) as a public GitHub repository and enable
-GitHub Pages in the repository settings. GitHub provides the hosting URL; you do
-not need to buy a domain. Publishing changes can take a few minutes to appear.
+IPHONE INSTALL
+1. Publish this folder (or its contents) to a public GitHub repository and
+   enable GitHub Pages. A custom domain is not required.
+2. Open the published HTTPS address in Safari on your iPhone.
+3. Tap Share, then Add to Home Screen. Choose Open as Web App if offered.
 
-On iPhone, open the published URL in Safari, tap Share, then Add to Home Screen.
-Turn on Open as Web App if that option appears, then tap Add. Internet access is
-needed to create competitions.
-
-Configuration is saved in the current browser/device only. The verification code
-is not encrypted separately. It is not included in this public source package; the
-web app sends it to Wise Old Man over HTTPS when you submit an event. Only publish
-the app files to a repository you are comfortable making public.
-
-The event picker scrolls through one combined list of skills and bosses. SoTW
-and BoTW each have a 50/50 chance, then a matching skill or boss is drawn. Titles
-look like "SoTW - Woodcutting" and "BoTW - Nex". Dates and times use the device's
-local timezone.
+CONFIGURATION AND PRIVACY
+Choose your group in Configuration and enter the Wise Old Man verification
+code. The selected group is saved when chosen, and the verification code is
+remembered automatically as you type. Settings stay in this browser on this
+device. The code is not encrypted separately. Requests go directly to the Wise
+Old Man API over HTTPS; the app does not send them to a separate server.
+Only publish this source to a repository you are comfortable making public.
+An internet connection is needed for searches, creation, roster changes, and
+competition data. The app shell can be cached for launch while offline.
 
 Wise Old Man API documentation:
 https://docs.wiseoldman.net/api/competitions/competition-endpoints
+https://docs.wiseoldman.net/api/groups/group-endpoints
