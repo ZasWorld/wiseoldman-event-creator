@@ -45,8 +45,6 @@ function updateConnectionDisplay() {
 function updateGroupDisplay() {
   const name = settings.groupName || (settings.groupId ? `Group ${settings.groupId}` : "No group selected");
   byId("active-group-name").textContent = name;
-  byId("summary-group-name").textContent = settings.groupName || "Choose a group";
-  byId("summary-group-id").textContent = settings.groupId ? `Wise Old Man group ${settings.groupId}` : "in Configuration";
   byId("config-group-name").textContent = settings.groupName || "No group selected";
   byId("config-group-id").textContent = settings.groupId ? `Group ID ${settings.groupId}` : "Search above to choose one";
 }
@@ -357,7 +355,13 @@ function renderRoster() {
   }
   filtered.forEach(member => {
     const wrapper = document.createElement("div"); wrapper.className = "member-row"; wrapper.dataset.username = member.username;
-    const avatar = document.createElement("span"); avatar.className = "member-avatar"; avatar.textContent = member.displayName.trim().split(/\s+/).map(word => word[0]).slice(0, 2).join("").toUpperCase();
+    const avatar = document.createElement("span"); avatar.className = "member-avatar";
+    const roleIcon = document.createElement("img"); roleIcon.className = "member-role-icon";
+    const iconRole = (member.role || "member").toLowerCase() === "member" ? "minion" : (member.role || "member").toLowerCase();
+    roleIcon.src = `https://wiseoldman.net/img/group_roles/${encodeURIComponent(iconRole)}.png`;
+    roleIcon.alt = `${pretty(member.role || "member")} rank icon`; roleIcon.loading = "lazy"; roleIcon.decoding = "async";
+    roleIcon.addEventListener("error", () => { roleIcon.src = "https://wiseoldman.net/img/fallback-icon.png"; roleIcon.alt = "Wise Old Man rank icon"; }, {once: true});
+    avatar.append(roleIcon);
     const nameBlock = document.createElement("div"); nameBlock.className = "member-name"; nameBlock.textContent = member.displayName;
     const sub = document.createElement("span"); sub.className = "member-sub"; sub.textContent = "Tap to see role and time in clan"; nameBlock.append(sub);
     const role = document.createElement("span"); role.className = "member-rank"; role.textContent = pretty(member.role || "member");

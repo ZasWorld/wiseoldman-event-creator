@@ -49,15 +49,14 @@
                 <label class="field full">Competition title<input id="title" required maxlength="100" placeholder="e.g. VB SoTW - Woodcutting"></label>
                 <label class="field">Event category<select id="kind"></select></label>
                 <label class="field">Subcategory<select id="metric"></select></label>
-                <label class="field">Starts in your local time<input id="starts" type="datetime-local" required></label>
-                <label class="field">Ends in your local time<input id="ends" type="datetime-local" required></label>
+                <label class="field time-field">Starts in your local time<input id="starts" type="datetime-local" required></label>
+                <label class="field time-field">Ends in your local time<input id="ends" type="datetime-local" required></label>
                 <p class="field-note full">Your device’s timezone is used automatically. Choose dates from the calendar controls.</p>
                 <button class="button primary full" id="submit" type="submit"><span>Create competition</span><span aria-hidden="true">↗</span></button>
               </form>
               <div class="status-box" id="result" role="status" aria-live="polite"></div>
             </article>
             <aside class="side-stack">
-              <article class="surface group-summary"><p class="overline">PUBLISHING TO</p><div class="summary-name"><span class="group-emblem">W</span><div><b id="summary-group-name">Choose a group</b><small id="summary-group-id">in Configuration</small></div></div><button class="text-button" data-open-view="config">Manage group settings <span>→</span></button></article>
               <article class="surface quick-note"><span class="note-icon">✦</span><div><b>Ready for the next challenge?</b><p>Pick a random skill or boss event and send it straight to this form.</p><button class="text-button" data-open-view="pick">Open event picker <span>→</span></button></div></article>
               <article class="mini-stat"><span class="mini-stat-icon">⌁</span><div><small>COMPETITION TIMES</small><b>Local to your device</b></div></article>
             </aside>
