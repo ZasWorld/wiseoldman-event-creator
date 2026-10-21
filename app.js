@@ -741,6 +741,7 @@ function renderSavedBingoBoards() {
 }
 function renderBingoTeams() {
   const assigned = new Set(bingoDraft.teams.flatMap(team => team.members.map(member => member.username)));
+  byId("clear-all-teams").disabled = assigned.size === 0;
   const query = byId("bingo-member-search").value.trim().toLocaleLowerCase();
   const unassigned = bingoRoster.filter(member => !assigned.has(member.username) && member.displayName.toLocaleLowerCase().includes(query));
   const rosterBox = byId("bingo-unassigned"); rosterBox.replaceChildren();
@@ -754,6 +755,8 @@ function renderBingoTeams() {
     const name = document.createElement("input"); name.className = "bingo-team-name"; name.value = team.name; name.maxLength = 30; name.setAttribute("aria-label", `Team ${teamIndex + 1} name`);
     name.addEventListener("input", () => { team.name = name.value.slice(0, 30) || `Team ${teamIndex + 1}`; bingoDirty = true; persistBingoDraft(); });
     const count = document.createElement("span"); count.className = "count-pill"; count.textContent = String(team.members.length); header.append(name, count);
+    const clear = document.createElement("button"); clear.type = "button"; clear.className = "bingo-clear-team"; clear.textContent = "×"; clear.disabled = team.members.length === 0; clear.title = `Clear ${team.name}`; clear.setAttribute("aria-label", `Clear all members from ${team.name}`);
+    clear.addEventListener("click", () => clearBingoTeam(teamIndex)); header.append(clear);
     const drop = document.createElement("div"); drop.className = "bingo-team-drop"; drop.dataset.team = String(teamIndex); drop.setAttribute("aria-label", `Drop zone for ${team.name}`);
     if (!team.members.length) { const empty = document.createElement("div"); empty.className = "bingo-team-empty"; empty.textContent = "Drop members here"; drop.append(empty); }
     team.members.forEach(member => drop.append(makeBingoMemberButton(member, true, teamIndex)));
@@ -762,6 +765,20 @@ function renderBingoTeams() {
     drop.addEventListener("click", event => { if (event.target === drop || event.target.classList.contains("bingo-team-empty")) { if (selectedBingoMember) assignBingoMember(selectedBingoMember, teamIndex); } });
     card.append(header, drop); columns.append(card);
   });
+}
+async function clearBingoTeam(teamIndex) {
+  const team = bingoDraft.teams[teamIndex];
+  if (!team?.members.length) return;
+  if (!await askConfirmation(`Clear ${team.name}?`, `Remove all ${team.members.length} members from this team?`, "Clear team", true)) return;
+  team.members = []; selectedBingoMember = null; bingoDirty = true; persistBingoDraft(); renderBingoTeams();
+  setStatus(byId("bingo-status"), `${team.name} was cleared. Members are back in the available list.`, "success");
+}
+async function clearAllBingoTeams() {
+  const count = bingoDraft.teams.reduce((sum, team) => sum + team.members.length, 0);
+  if (!count) return;
+  if (!await askConfirmation("Clear all teams?", `Remove all ${count} assigned members from the three teams?`, "Clear all teams", true)) return;
+  bingoDraft.teams.forEach(team => { team.members = []; }); selectedBingoMember = null; bingoDirty = true; persistBingoDraft(); renderBingoTeams();
+  setStatus(byId("bingo-status"), "All teams were cleared. Members are back in the available list.", "success");
 }
 function openBingoSkillDialog(member) {
   editingBingoMember = member;
@@ -830,6 +847,7 @@ byId("bingo-teams-mode").addEventListener("click", () => setBingoMode("teams"));
 byId("bingo-search").addEventListener("input", renderBingoCatalog);
 byId("bingo-member-search").addEventListener("input", renderBingoTeams);
 byId("refresh-bingo-roster").addEventListener("click", loadBingoRoster);
+byId("clear-all-teams").addEventListener("click", clearAllBingoTeams);
 byId("member-skill-range").addEventListener("input", () => { byId("member-skill-value").textContent = `${byId("member-skill-range").value} / 10`; });
 byId("member-skill-close").addEventListener("click", () => byId("member-skill-dialog").close());
 byId("save-skill-rating").addEventListener("click", () => saveBingoSkill(false));
