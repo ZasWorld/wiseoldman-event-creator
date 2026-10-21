@@ -807,7 +807,7 @@ function makeBingoMemberButton(member, assigned, teamIndex = -1) {
     selectedBingoMember = selectedBingoMember?.username === member.username ? null : member; renderBingoTeams();
     if (selectedBingoMember) setStatus(byId("bingo-status"), `${member.displayName} selected. Tap a team to place them.`);
   });
-  const rating = document.createElement("button"); rating.type = "button"; rating.className = "bingo-skill-rating"; rating.textContent = `Set skill · ${bingoPlayerSkill(member)}/10`; rating.title = `Set ${member.displayName}'s skill rating`;
+  const rating = document.createElement("button"); rating.type = "button"; rating.className = "bingo-skill-rating"; rating.textContent = `${bingoPlayerSkill(member)}/10`; rating.title = `Tap ${bingoPlayerSkill(member)}/10 to set ${member.displayName}'s skill rating`;
   rating.setAttribute("aria-label", `Set ${member.displayName}'s skill rating, ${bingoPlayerSkill(member)} out of 10`);
   rating.addEventListener("click", event => { event.stopPropagation(); openBingoSkillDialog(member); });
   chip.append(name, rating);
@@ -841,7 +841,7 @@ async function loadBingoRoster() {
       const player = membership.player || {}; const username = player.username || player.displayName; const displayName = player.displayName || player.username;
       return username && displayName ? {username, displayName} : null;
     }).filter(Boolean).sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, {sensitivity: "base"}));
-    bingoRosterGroupId = settings.groupId; byId("bingo-roster-note").textContent = `${bingoRoster.length} members loaded. Tap a name to set its skill level, then save and select it to place it on a team.`;
+    bingoRosterGroupId = settings.groupId; byId("bingo-roster-note").textContent = `${bingoRoster.length} members loaded. Tap a name to select them for a team. Tap the separate skill score button to change their rating.`;
     renderBingoTeams(); setStatus(byId("bingo-status"), `Loaded ${bingoRoster.length} Wise Old Man members.`, "success");
   } catch (error) { byId("bingo-roster-note").textContent = `Could not load group members: ${error.message}`; setStatus(byId("bingo-status"), `Could not load members: ${error.message}`, "error"); }
   finally { refresh.disabled = false; refresh.innerHTML = "↻ <span>Refresh</span>"; }
