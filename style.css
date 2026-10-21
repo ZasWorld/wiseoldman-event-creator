@@ -16,3 +16,55 @@
   .member-avatar{overflow:hidden}
 }
 @media(max-width:380px){.field input[type="datetime-local"]{font-size:12px;padding-inline:7px}.member-action-row{gap:6px}}
+
+/* Bingo board builder */
+.bingo-switch{display:flex;gap:7px;margin:0 0 16px;padding:5px;border:1px solid var(--line);border-radius:12px;background:#141a24;width:max-content;max-width:100%}
+.bingo-mode{min-height:38px;padding:0 17px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:12px;font-weight:700}
+.bingo-mode.active{background:#302a49;color:#fff;box-shadow:inset 0 0 0 1px #9a83ff35}
+.bingo-panel{display:none}.bingo-panel.active{display:block}
+.bingo-tools{display:flex;align-items:end;gap:10px;margin-bottom:16px;padding:14px}
+.bingo-tools .field{flex:1;min-width:140px}.bingo-tools .field input,.bingo-tools .field select{height:42px}
+.bingo-workspace{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(270px,.8fr);gap:17px;align-items:start}
+.bingo-board-card,.bingo-catalog-card,.bingo-roster-card{min-width:0;padding:clamp(16px,2vw,25px)}
+.bingo-board-card .surface-heading,.bingo-catalog-card .surface-heading,.bingo-roster-card .surface-heading{margin-bottom:12px}
+.bingo-board-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}
+.bingo-board-actions .button{min-height:36px;padding:0 10px;font-size:11px}
+.bingo-board-card .surface-copy,.bingo-catalog-card .surface-copy,.bingo-roster-card .surface-copy{margin:0 0 13px;color:var(--muted);font-size:11px}
+.bingo-board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.bingo-cell{position:relative;min-width:0;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;padding:13px 3px 4px;border:1px dashed #48536a;border-radius:9px;background:#121823;color:var(--text);transition:border-color .15s,background .15s,transform .15s}
+.bingo-cell:hover,.bingo-cell.selected{border-color:var(--accent-bright);background:#29243c;transform:translateY(-1px)}
+.bingo-cell.filled{border-style:solid;border-color:#38465a;background:linear-gradient(145deg,#222c3b,#171e29)}
+.bingo-cell-number{position:absolute;top:3px;left:5px;color:#758299;font-size:8px;font-weight:700}
+.bingo-cell-image{width:55%;height:54%;object-fit:contain;image-rendering:auto}
+.bingo-cell-name{display:-webkit-box;max-width:100%;overflow:hidden;color:#e5e8ef;font-size:clamp(7px,.75vw,10px);font-weight:600;line-height:1.15;text-align:center;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.bingo-image-frame{position:relative;display:grid;place-items:center;flex:0 0 auto;width:36px;height:36px;border-radius:9px;background:#ffffff08}
+.bingo-image-frame img{width:100%;height:100%;object-fit:contain;padding:3px}
+.bingo-image-frame img[hidden],.bingo-image-fallback[hidden]{display:none}
+.bingo-image-fallback{display:grid;width:100%;height:100%;place-items:center;color:var(--accent-bright);font:800 16px Manrope,sans-serif}
+.bingo-catalog-card{display:flex;flex-direction:column}
+.bingo-search{margin-bottom:10px}
+.bingo-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:580px;overflow:auto;padding:2px 4px 2px 0;overscroll-behavior:contain}
+.bingo-monster{min-width:0;display:flex;align-items:center;gap:8px;padding:6px;border:1px solid #ffffff0d;border-radius:10px;background:#141a24;color:#dce2ec;text-align:left;font-size:10px;font-weight:600;line-height:1.2}
+.bingo-monster:hover,.bingo-monster.selected{border-color:#9a83ff91;background:#2a2540;color:#fff}
+.bingo-monster .bingo-image-frame{width:31px;height:31px;flex-basis:31px}
+.bingo-monster>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bingo-teams-layout{display:grid;grid-template-columns:minmax(220px,.72fr) minmax(0,2fr);gap:17px;align-items:start}
+.bingo-roster-card{position:sticky;top:15px}
+.bingo-roster-card .surface-heading{align-items:flex-start}
+.bingo-roster-card .surface-heading h2{font-size:18px}
+.bingo-roster-card .button.compact{min-height:34px;padding:0 9px;font-size:10px}
+.bingo-unassigned{display:flex;align-content:flex-start;align-items:flex-start;flex-wrap:wrap;gap:6px;min-height:110px;max-height:510px;overflow:auto;padding:9px;border:1px dashed #46536a;border-radius:12px;background:#131923}
+.bingo-member{min-width:0;display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid #374357;border-radius:9px;background:#242d3c;color:#e1e6ef;font-size:11px;font-weight:600;text-align:left;touch-action:manipulation}
+.bingo-member:hover,.bingo-member.selected{border-color:var(--accent-bright);background:#30294a;color:#fff}
+.bingo-member-team-label{color:#bd8c9b;font-size:14px;line-height:1}
+.bingo-team-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;align-items:start}
+.bingo-team-card{min-width:0;padding:13px}
+.bingo-team-heading{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.bingo-team-name{width:100%;min-width:0;height:38px;padding:0 9px;border:1px solid #424d60;border-radius:9px;background:#121823;color:var(--text);font-size:12px;font-weight:700}
+.bingo-team-heading .count-pill{flex:0 0 auto}
+.bingo-team-drop{display:flex;align-content:flex-start;align-items:flex-start;flex-wrap:wrap;gap:6px;min-height:220px;padding:8px;border:1px dashed #46536a;border-radius:11px;background:#131923}
+.bingo-team-empty{width:100%;align-self:center;padding:20px 4px;color:var(--faint);font-size:11px;text-align:center}
+.bingo-status{margin-top:10px}
+@media(max-width:1100px){.bingo-workspace{grid-template-columns:minmax(0,1.1fr) minmax(250px,.9fr)}.bingo-teams-layout{grid-template-columns:1fr}.bingo-roster-card{position:static}.bingo-unassigned{max-height:210px}}
+@media(max-width:760px){.nav{grid-template-columns:repeat(6,minmax(0,1fr))}.nav-item{font-size:8px}.nav-icon{font-size:16px}.bingo-switch{width:100%;display:grid;grid-template-columns:1fr 1fr}.bingo-mode{padding:0 7px}.bingo-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px}.bingo-tools .field{min-width:0}.bingo-tools .saved-board-field{grid-column:1/-1}.bingo-tools .button{min-height:39px;padding:0 7px;font-size:10px}.bingo-workspace{grid-template-columns:1fr;gap:11px}.bingo-board-card,.bingo-catalog-card,.bingo-roster-card{padding:14px}.bingo-board-card .surface-heading h2,.bingo-catalog-card .surface-heading h2,.bingo-roster-card .surface-heading h2{font-size:17px}.bingo-board-actions .button{font-size:9px;padding:0 7px;min-height:32px}.bingo-board{gap:4px}.bingo-cell{border-radius:6px;padding:12px 2px 3px}.bingo-cell-image{width:58%;height:52%}.bingo-cell-name{font-size:clamp(6px,2.1vw,9px)}.bingo-cell-number{top:2px;left:3px;font-size:7px}.bingo-catalog{grid-template-columns:repeat(2,minmax(0,1fr));max-height:390px}.bingo-teams-layout{grid-template-columns:1fr;gap:11px}.bingo-team-columns{grid-template-columns:1fr;gap:9px}.bingo-team-card{padding:11px}.bingo-team-drop{min-height:90px}.bingo-unassigned{max-height:250px}.bingo-status{margin-top:9px}}
+@media(max-width:380px){.nav-item{font-size:7px}.nav-icon{font-size:15px}.bingo-board{gap:3px}.bingo-cell-name{font-size:6px}.bingo-tools .button{font-size:9px}}

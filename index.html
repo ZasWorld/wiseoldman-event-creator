@@ -24,6 +24,7 @@
         <button class="nav-item" data-view="pick"><span class="nav-icon">⟳</span><span>Event picker</span></button>
         <button class="nav-item" data-view="members"><span class="nav-icon">♟</span><span>Clan members</span></button>
         <button class="nav-item" data-view="events"><span class="nav-icon">▤</span><span>Competitions</span></button>
+        <button class="nav-item" data-view="bingo"><span class="nav-icon">▦</span><span>Bingo</span></button>
         <button class="nav-item" data-view="config"><span class="nav-icon">⚙</span><span>Configuration</span></button>
       </nav>
       <div class="rail-bottom"><span class="connection-dot"></span><span id="connection-label">No clan selected</span></div>
@@ -103,6 +104,49 @@
           <div class="event-columns"><section class="event-section"><div class="section-title"><h3>Upcoming</h3><span class="count-pill" id="upcoming-count">0</span></div><div class="event-list" id="upcoming-list"><div class="empty-state">Refresh to load events.</div></div></section><section class="event-section"><div class="section-title"><h3>Ongoing</h3><span class="count-pill" id="ongoing-count">0</span></div><div class="event-list" id="ongoing-list"><div class="empty-state">Refresh to load events.</div></div></section></div>
           <div class="status-box" id="events-status" role="status" aria-live="polite"></div>
           <div class="danger-dock" id="delete-dock" hidden><div><b id="selected-title">No event selected</b><small>Selected competition</small></div><button class="button danger" id="delete-event">Delete event</button></div>
+        </section>
+
+        <section class="view" id="view-bingo" aria-labelledby="page-title">
+          <div class="bingo-switch" role="tablist" aria-label="Bingo tools">
+            <button class="bingo-mode active" id="bingo-board-mode" type="button" role="tab" aria-selected="true">Board maker</button>
+            <button class="bingo-mode" id="bingo-teams-mode" type="button" role="tab" aria-selected="false">Team creator</button>
+          </div>
+          <div class="bingo-panel active" id="bingo-board-panel" role="tabpanel" aria-labelledby="bingo-board-mode">
+            <article class="surface bingo-tools">
+              <label class="field">Board name<input id="bingo-title" maxlength="60" value="Clan Bingo"></label>
+              <label class="field saved-board-field">Saved boards<select id="saved-boards"><option value="">Choose a saved board</option></select></label>
+              <button class="button primary" id="save-bingo">Save board</button>
+              <button class="button secondary" id="new-bingo">New board</button>
+              <button class="button secondary" id="export-bingo">Export</button>
+              <button class="button secondary" id="import-bingo">Import</button>
+              <input id="import-bingo-file" type="file" accept="application/json,.json" hidden>
+            </article>
+            <div class="bingo-workspace">
+              <article class="surface bingo-board-card">
+                <div class="surface-heading"><div><p class="overline">36 SQUARES</p><h2>Your bingo board</h2></div><div class="bingo-board-actions"><button class="button secondary compact" id="remove-bingo-tile" disabled>Remove selected</button><button class="button secondary compact" id="clear-bingo">Clear board</button></div></div>
+                <p class="surface-copy" id="bingo-board-hint">Choose a monster, then tap a square, or drag it onto the board.</p>
+                <div class="bingo-board" id="bingo-board" aria-label="Six by six bingo board"></div>
+              </article>
+              <aside class="surface bingo-catalog-card">
+                <div class="surface-heading"><div><p class="overline">OSRS WIKI</p><h2>Monster library</h2></div><span class="heading-mark">⌕</span></div>
+                <label class="search-field bingo-search"><span>⌕</span><input id="bingo-search" type="search" placeholder="Find a monster" aria-label="Find a monster"></label>
+                <p class="surface-copy">Monster pictures load from the Old School RuneScape Wiki.</p>
+                <div class="bingo-catalog" id="bingo-catalog"></div>
+              </aside>
+            </div>
+          </div>
+          <div class="bingo-panel" id="bingo-teams-panel" role="tabpanel" aria-labelledby="bingo-teams-mode">
+            <div class="bingo-teams-layout">
+              <article class="surface bingo-roster-card">
+                <div class="surface-heading"><div><p class="overline">WISE OLD MAN GROUP</p><h2>Available members</h2></div><button class="button secondary compact" id="refresh-bingo-roster">↻ <span>Refresh</span></button></div>
+                <p class="surface-copy" id="bingo-roster-note">Select your group in Configuration, then refresh the member list.</p>
+                <label class="search-field bingo-search"><span>⌕</span><input id="bingo-member-search" type="search" placeholder="Find a member" aria-label="Find a clan member"></label>
+                <div class="bingo-unassigned" id="bingo-unassigned" aria-label="Unassigned members"></div>
+              </article>
+              <div class="bingo-team-columns" id="bingo-team-columns"></div>
+            </div>
+          </div>
+          <div class="status-box" id="bingo-status" role="status" aria-live="polite"></div>
         </section>
 
         <section class="view" id="view-config" aria-labelledby="page-title">
