@@ -19,6 +19,7 @@ const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&
 const byId = id => document.getElementById(id);
 const loadSettings = () => { try { return JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch { return {}; } };
 let settings = loadSettings();
+delete settings.allowRequests;
 let roster = [];
 let rosterSort = 0;
 const sortModes = ["Alphabetical", "Rank", "Time in clan"];
@@ -35,11 +36,11 @@ function persistSettings() {
   updateGroupDisplay();
 }
 function updateConnectionDisplay() {
-  const connected = Boolean(settings.allowRequests && settings.groupId);
+  const connected = Boolean(settings.groupId);
   [byId("connection-label"), byId("mobile-connection")].forEach(node => {
     node.classList.toggle("connected", connected);
-    if (node.id === "connection-label") node.textContent = connected ? "Requests enabled" : "Not connected";
-    if (node.id === "mobile-connection") node.title = connected ? "Wise Old Man requests enabled" : "Wise Old Man requests disabled";
+    if (node.id === "connection-label") node.textContent = connected ? "Clan selected" : "No clan selected";
+    if (node.id === "mobile-connection") node.title = connected ? "Wise Old Man clan selected" : "No clan selected";
   });
 }
 function updateGroupDisplay() {
@@ -60,15 +61,7 @@ function toast(message) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => node.classList.remove("show"), 2800);
 }
-function requireRequests() {
-  if (!settings.allowRequests) {
-    toast("Enable Wise Old Man requests in Configuration first.");
-    return false;
-  }
-  return true;
-}
 function requireGroupAndCode() {
-  if (!requireRequests()) return false;
   if (!settings.groupId || !settings.verification) {
     toast("Select a group and save its verification code in Configuration.");
     openView("config");
@@ -144,7 +137,7 @@ function isoFromLocal(value) {
 byId("event-form").addEventListener("submit", async event => {
   event.preventDefault();
   const result = byId("result");
-  if (!requireGroupAndCode()) { setStatus(result, "Choose a group, enter its verification code, and enable requests in Configuration.", "error"); return; }
+  if (!requireGroupAndCode()) { setStatus(result, "Choose a group and enter its verification code in Configuration.", "error"); return; }
   const title = byId("title").value.trim();
   let startsAt, endsAt;
   try { startsAt = isoFromLocal(byId("starts").value); endsAt = isoFromLocal(byId("ends").value); }
@@ -256,22 +249,15 @@ byId("use-draw").addEventListener("click", () => {
 function populateConfiguration() {
   byId("group-search").value = settings.groupName || "";
   byId("verification").value = settings.verification || "";
-  byId("allow-requests").checked = Boolean(settings.allowRequests);
   updateGroupDisplay(); updateConnectionDisplay();
 }
 populateConfiguration();
-byId("allow-requests").addEventListener("change", () => {
-  settings.allowRequests = byId("allow-requests").checked;
-  persistSettings();
-  if (settings.allowRequests) toast("Wise Old Man requests are enabled on this device.");
-});
 byId("verification").addEventListener("input", () => {
   settings.verification = byId("verification").value.trim();
   persistSettings();
 });
 byId("save-config").addEventListener("click", () => {
   settings.verification = byId("verification").value.trim();
-  settings.allowRequests = byId("allow-requests").checked;
   persistSettings();
   setStatus(byId("config-result"), "Configuration saved in this browser on this device.", "success");
   toast("Configuration saved.");
@@ -280,7 +266,6 @@ byId("search-groups").addEventListener("click", async () => {
   const query = byId("group-search").value.trim();
   const results = byId("group-results"); results.replaceChildren();
   if (!query) { setStatus(byId("config-result"), "Type a clan name before searching.", "error"); return; }
-  if (!requireRequests()) { setStatus(byId("config-result"), "Enable Wise Old Man requests above and save before searching.", "error"); return; }
   byId("search-groups").disabled = true; byId("search-groups").textContent = "Searching…";
   try {
     const groups = await api(`/groups?name=${encodeURIComponent(query)}&limit=20`);
@@ -306,12 +291,12 @@ byId("clear-group").addEventListener("click", () => {
   setStatus(byId("config-result"), "No group is selected.");
 });
 byId("clear-credentials").addEventListener("click", async () => {
-  const confirmed = await askConfirmation("Clear saved configuration?", "This removes the selected group, verification code, and request setting from this browser.", "Clear settings", true);
+  const confirmed = await askConfirmation("Clear saved configuration?", "This removes the selected group and verification code from this browser.", "Clear settings", true);
   if (!confirmed) return;
   settings = {}; persistSettings(); populateConfiguration(); byId("group-results").replaceChildren();
   setStatus(byId("config-result"), "Saved configuration cleared.", "success");
 });
-if (settings.groupId && settings.allowRequests && !settings.groupName) {
+if (settings.groupId && !settings.groupName) {
   api(`/groups/${encodeURIComponent(settings.groupId)}`).then(group => {
     settings.groupName = group.name || `Group ${settings.groupId}`; persistSettings();
   }).catch(() => {});

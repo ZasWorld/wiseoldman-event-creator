@@ -26,7 +26,7 @@
         <button class="nav-item" data-view="events"><span class="nav-icon">▤</span><span>Competitions</span></button>
         <button class="nav-item" data-view="config"><span class="nav-icon">⚙</span><span>Configuration</span></button>
       </nav>
-      <div class="rail-bottom"><span class="connection-dot"></span><span id="connection-label">Not connected</span></div>
+      <div class="rail-bottom"><span class="connection-dot"></span><span id="connection-label">No clan selected</span></div>
     </aside>
 
     <main class="main-area">
@@ -112,10 +112,9 @@
               <div id="group-results" class="group-results" aria-live="polite"></div>
               <div class="selected-group-card" id="selected-group-card"><span class="group-emblem">W</span><div><small>SELECTED GROUP</small><b id="config-group-name">No group selected</b><span id="config-group-id">Search above to choose one</span></div><button id="clear-group" class="icon-button" aria-label="Clear selected group" title="Clear selected group">×</button></div>
               <label class="field">Verification code<input id="verification" type="password" autocomplete="off" placeholder="Enter your group verification code"></label>
-              <div class="toggle-row"><div><b>Allow Wise Old Man requests</b><small>Needed to create events and manage the roster.</small></div><label class="switch"><input id="allow-requests" type="checkbox"><span></span></label></div>
               <button class="button primary" id="save-config">Save configuration <span>✓</span></button><div class="status-box" id="config-result" role="status" aria-live="polite"></div>
             </article>
-            <aside class="surface privacy-card"><div class="privacy-icon">⌑</div><p class="overline">YOUR DEVICE</p><h3>Credentials stay in this browser</h3><p>Your group ID and verification code are saved in this device’s browser storage, which is not encrypted separately. Requests go directly to Wise Old Man over HTTPS when you use the app.</p><button class="text-button" id="clear-credentials">Clear saved configuration <span>→</span></button><div class="privacy-foot"><span>↗</span> Wise Old Man API</div></aside>
+            <aside class="surface privacy-card"><div class="privacy-icon">⌑</div><p class="overline">YOUR DEVICE</p><h3>Credentials stay in this browser</h3><p>Your clan and verification code are saved in this browser on this device. When you search for a clan or use a clan feature, the app sends the needed information directly to Wise Old Man over HTTPS.</p><button class="text-button" id="clear-credentials">Clear saved configuration <span>→</span></button><div class="privacy-foot"><span>↗</span> Wise Old Man API</div></aside>
           </div>
         </section>
 
