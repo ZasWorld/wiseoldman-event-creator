@@ -114,7 +114,9 @@
           <div class="bingo-panel active" id="bingo-board-panel" role="tabpanel" aria-labelledby="bingo-board-mode">
             <article class="surface bingo-tools">
               <label class="field">Board name<input id="bingo-title" maxlength="60" value="Clan Bingo"></label>
+              <label class="field bingo-size-control">Board size<select id="bingo-size"><option value="small" selected>Small · 5 × 5</option><option value="large">Large · 7 × 7</option></select></label>
               <label class="field saved-board-field">Saved boards<select id="saved-boards"><option value="">Choose a saved board</option></select></label>
+              <button class="button secondary" id="delete-bingo" disabled>Delete saved board</button>
               <button class="button primary" id="save-bingo">Save board</button>
               <button class="button secondary" id="new-bingo">New board</button>
               <button class="button secondary" id="export-bingo">Export</button>
@@ -123,9 +125,9 @@
             </article>
             <div class="bingo-workspace">
               <article class="surface bingo-board-card">
-                <div class="surface-heading"><div><p class="overline">36 SQUARES</p><h2>Your bingo board</h2></div><div class="bingo-board-actions"><button class="button secondary compact" id="remove-bingo-tile" disabled>Remove selected</button><button class="button secondary compact" id="clear-bingo">Clear board</button></div></div>
-                <p class="surface-copy" id="bingo-board-hint">Choose a monster, then tap a square, or drag it onto the board.</p>
-                <div class="bingo-board" id="bingo-board" aria-label="Six by six bingo board"></div>
+                <div class="surface-heading"><div><p class="overline" id="bingo-square-count">5 × 5 · 25 SQUARES</p><h2>Your bingo board</h2></div><div class="bingo-board-actions"><button class="button secondary compact" id="remove-bingo-tile" disabled>Remove selected</button><button class="button secondary compact" id="clear-bingo">Clear board</button></div></div>
+                <p class="surface-copy" id="bingo-board-hint">Tap a monster to select it, then tap a square to place it. You can also drag tiles on desktop.</p>
+                <div class="bingo-board" id="bingo-board" aria-label="Bingo board with a free center square"></div>
               </article>
               <aside class="surface bingo-catalog-card">
                 <div class="surface-heading"><div><p class="overline">TILE LIBRARY</p><h2>Monster library</h2></div><button class="button primary compact" id="create-custom-tile">＋ <span>Custom tile</span></button></div>
