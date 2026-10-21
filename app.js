@@ -859,6 +859,111 @@ byId("export-bingo").addEventListener("click", () => {
   const link = document.createElement("a"); link.href = url; link.download = `${(bingoDraft.title || "clan-bingo").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "clan-bingo"}.json`; link.click(); URL.revokeObjectURL(url);
   setStatus(byId("bingo-status"), "Board and team assignments exported as a JSON file.", "success");
 });
+function wrapBingoCanvasText(context, value, maxWidth) {
+  const lines = [];
+  String(value || "").split(/\s+/).filter(Boolean).forEach(word => {
+    const chunks = [];
+    let chunk = "";
+    for (const character of word) {
+      if (chunk && context.measureText(chunk + character).width > maxWidth) { chunks.push(chunk); chunk = ""; }
+      chunk += character;
+    }
+    if (chunk) chunks.push(chunk);
+    chunks.forEach(part => {
+      const current = lines[lines.length - 1];
+      if (!current || context.measureText(`${current} ${part}`).width > maxWidth) lines.push(part);
+      else lines[lines.length - 1] = `${current} ${part}`;
+    });
+  });
+  return lines.length ? lines : [""];
+}
+function roundedCanvasRect(context, x, y, width, height, radius, fill, stroke) {
+  context.beginPath(); context.roundRect(x, y, width, height, radius);
+  context.fillStyle = fill; context.fill();
+  if (stroke) { context.strokeStyle = stroke; context.lineWidth = 2; context.stroke(); }
+}
+function renderBingoShareImage() {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const width = 1600; const margin = 48; const headerHeight = 142; const boardCardWidth = 760; const gap = 20; const teamsX = margin + boardCardWidth + gap; const teamsWidth = width - margin - teamsX;
+  const boardDimension = bingoDimensions[bingoDraft.size] || 5; const boardSize = 680; const cellSize = boardSize / boardDimension; const boardX = margin + (boardCardWidth - boardSize) / 2; const boardY = headerHeight + 70;
+  const teamGap = 16; const teamWidth = (teamsWidth - teamGap * 2) / 3; const teamTextWidth = teamWidth - 36;
+  const teamRows = bingoDraft.teams.map(team => {
+    context.font = "600 17px 'DM Sans', 'Segoe UI', sans-serif";
+    return team.members.map(member => {
+      const lines = wrapBingoCanvasText(context, member.displayName || member.username, teamTextWidth - 30);
+      return {lines, height: Math.max(42, lines.length * 23 + 16)};
+    });
+  });
+  const teamCardHeights = teamRows.map(rows => 82 + rows.reduce((sum, row) => sum + row.height + 8, 0));
+  const contentHeight = Math.max(760, ...teamCardHeights);
+  canvas.width = width; canvas.height = headerHeight + contentHeight + 48;
+  context.fillStyle = "#10131b"; context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#b4a5ff"; context.font = "700 14px 'DM Sans', 'Segoe UI', sans-serif"; context.fillText("CLAN BINGO", margin, 46);
+  context.fillStyle = "#f2f4f8"; context.font = "800 40px Manrope, 'Segoe UI', sans-serif"; context.fillText(bingoDraft.title || "Clan Bingo", margin, 96);
+  context.fillStyle = "#a3adbd"; context.font = "500 17px 'DM Sans', 'Segoe UI', sans-serif"; context.fillText(`${boardDimension} × ${boardDimension} board  ·  ${bingoDraft.teams.reduce((sum, team) => sum + team.members.length, 0)} members assigned`, margin, 126);
+  const panelY = headerHeight; const panelHeight = contentHeight;
+  roundedCanvasRect(context, margin, panelY, boardCardWidth, panelHeight, 22, "#1a202d", "#303a4a");
+  context.fillStyle = "#b4a5ff"; context.font = "700 13px 'DM Sans', 'Segoe UI', sans-serif"; context.fillText("BINGO BOARD", margin + 30, panelY + 40);
+  context.fillStyle = "#a3adbd"; context.font = "500 15px 'DM Sans', 'Segoe UI', sans-serif"; context.fillText(`${boardDimension} × ${boardDimension}`, margin + 30, panelY + 66);
+  const freeIndex = bingoFreeIndex(bingoDraft.size);
+  bingoDraft.cells.forEach((tile, index) => {
+    const row = Math.floor(index / boardDimension); const column = index % boardDimension; const x = boardX + column * cellSize; const y = boardY + row * cellSize; const free = index === freeIndex;
+    const fill = free ? "#302a49" : tile ? "#222c3b" : "#121823"; const stroke = free ? "#8774d5" : tile ? "#38465a" : "#48536a";
+    roundedCanvasRect(context, x + 3, y + 3, cellSize - 6, cellSize - 6, 10, fill, stroke);
+    if (free) {
+      context.fillStyle = "#e2d9ff"; context.font = "800 17px Manrope, 'Segoe UI', sans-serif"; context.textAlign = "center"; context.textBaseline = "middle";
+      context.fillText("FREE SPACE", x + cellSize / 2, y + cellSize / 2); context.textAlign = "left"; context.textBaseline = "alphabetic"; return;
+    }
+    context.fillStyle = "#758299"; context.font = "700 11px 'DM Sans', 'Segoe UI', sans-serif"; context.fillText(String(index + 1).padStart(2, "0"), x + 10, y + 19);
+    if (!tile) return;
+    const maxTextWidth = cellSize - 20; const maxTextHeight = cellSize - 34; let fontSize = Math.min(19, cellSize * 0.18); let lines;
+    do {
+      context.font = `800 ${fontSize}px Manrope, 'Segoe UI', sans-serif`;
+      lines = wrapBingoCanvasText(context, tile.name, maxTextWidth);
+      if (lines.length * fontSize * 1.16 <= maxTextHeight || fontSize <= 8) break;
+      fontSize -= 0.5;
+    } while (fontSize > 7.5);
+    context.font = `800 ${fontSize}px Manrope, 'Segoe UI', sans-serif`; context.fillStyle = "#f2f4f8"; context.textAlign = "center"; context.textBaseline = "middle";
+    const lineHeight = fontSize * 1.16; const centerY = y + cellSize / 2 + 5; const totalHeight = lines.length * lineHeight;
+    lines.forEach((line, lineIndex) => context.fillText(line, x + cellSize / 2, centerY - totalHeight / 2 + lineHeight * (lineIndex + 0.5), maxTextWidth));
+    context.textAlign = "left"; context.textBaseline = "alphabetic";
+  });
+  bingoDraft.teams.forEach((team, teamIndex) => {
+    const x = teamsX + teamIndex * (teamWidth + teamGap); const height = Math.max(panelHeight, teamCardHeights[teamIndex]);
+    roundedCanvasRect(context, x, panelY, teamWidth, height, 18, "#1a202d", "#303a4a");
+    context.fillStyle = "#b4a5ff"; context.font = "700 12px 'DM Sans', 'Segoe UI', sans-serif"; context.fillText(`TEAM ${teamIndex + 1}`, x + 18, panelY + 32);
+    context.fillStyle = "#f2f4f8"; context.font = "800 22px Manrope, 'Segoe UI', sans-serif"; context.fillText(team.name || `Team ${teamIndex + 1}`, x + 18, panelY + 62, teamWidth - 36);
+    context.fillStyle = "#a3adbd"; context.font = "500 13px 'DM Sans', 'Segoe UI', sans-serif"; context.fillText(`${team.members.length} members`, x + 18, panelY + 84);
+    let y = panelY + 104;
+    if (!team.members.length) { context.fillStyle = "#738095"; context.font = "500 14px 'DM Sans', 'Segoe UI', sans-serif"; context.fillText("No members assigned", x + 18, y + 16); return; }
+    team.members.forEach((member, memberIndex) => {
+      const row = teamRows[teamIndex][memberIndex]; roundedCanvasRect(context, x + 12, y, teamWidth - 24, row.height, 9, "#202737", "#303a4a");
+      context.fillStyle = "#b4a5ff"; context.font = "800 12px 'DM Sans', 'Segoe UI', sans-serif"; context.fillText(String(memberIndex + 1).padStart(2, "0"), x + 22, y + 25);
+      context.fillStyle = "#e8ebf2"; context.font = "600 17px 'DM Sans', 'Segoe UI', sans-serif";
+      row.lines.forEach((line, lineIndex) => context.fillText(line, x + 52, y + 24 + lineIndex * 23, teamTextWidth - 20));
+      y += row.height + 8;
+    });
+  });
+  context.fillStyle = "#738095"; context.font = "500 12px 'DM Sans', 'Segoe UI', sans-serif"; context.textAlign = "right"; context.fillText("WoM Clan Manager · Made by Its Za", width - margin, canvas.height - 18); context.textAlign = "left";
+  return canvas;
+}
+byId("export-bingo-png").addEventListener("click", async () => {
+  const button = byId("export-bingo-png"); button.disabled = true; button.textContent = "Preparing…";
+  try {
+    if (document.fonts?.ready) await document.fonts.ready;
+    const canvas = renderBingoShareImage();
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("Could not create the PNG image.");
+    const filename = `${(bingoDraft.title || "clan-bingo").trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "clan-bingo"}.png`;
+    const file = new File([blob], filename, {type: "image/png"});
+    if (navigator.share && navigator.canShare?.({files: [file]})) await navigator.share({files: [file], title: bingoDraft.title || "Clan Bingo"});
+    else { const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = filename; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+    setStatus(byId("bingo-status"), "Bingo board and team lists exported as a PNG.", "success");
+  } catch (error) {
+    if (error.name !== "AbortError") setStatus(byId("bingo-status"), `Could not export PNG: ${error.message}`, "error");
+  } finally { button.disabled = false; button.textContent = "Export PNG"; }
+});
 byId("import-bingo").addEventListener("click", () => byId("import-bingo-file").click());
 byId("import-bingo-file").addEventListener("change", async () => {
   const file = byId("import-bingo-file").files?.[0]; if (!file) return;
