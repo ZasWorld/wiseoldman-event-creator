@@ -741,7 +741,6 @@ function renderSavedBingoBoards() {
 }
 function renderBingoTeams() {
   const assigned = new Set(bingoDraft.teams.flatMap(team => team.members.map(member => member.username)));
-  byId("clear-all-teams").disabled = assigned.size === 0;
   const query = byId("bingo-member-search").value.trim().toLocaleLowerCase();
   const unassigned = bingoRoster.filter(member => !assigned.has(member.username) && member.displayName.toLocaleLowerCase().includes(query));
   const rosterBox = byId("bingo-unassigned"); rosterBox.replaceChildren();
@@ -775,7 +774,7 @@ async function clearBingoTeam(teamIndex) {
 }
 async function clearAllBingoTeams() {
   const count = bingoDraft.teams.reduce((sum, team) => sum + team.members.length, 0);
-  if (!count) return;
+  if (!count) { setStatus(byId("bingo-status"), "No team assignments to clear."); return; }
   if (!await askConfirmation("Clear all teams?", `Remove all ${count} assigned members from the three teams?`, "Clear all teams", true)) return;
   bingoDraft.teams.forEach(team => { team.members = []; }); selectedBingoMember = null; bingoDirty = true; persistBingoDraft(); renderBingoTeams();
   setStatus(byId("bingo-status"), "All teams were cleared. Members are back in the available list.", "success");
@@ -801,9 +800,14 @@ function saveBingoSkill(selectForTeam) {
 function makeBingoMemberButton(member, assigned, teamIndex = -1) {
   const chip = document.createElement("div"); chip.className = "bingo-member" + (selectedBingoMember?.username === member.username ? " selected" : ""); chip.draggable = supportsBingoDrag;
   chip.setAttribute("role", "group"); chip.setAttribute("aria-label", `${member.displayName}, skill ${bingoPlayerSkill(member)} out of 10${assigned ? `, assigned to ${bingoDraft.teams[teamIndex].name}` : ", unassigned"}`);
-  const name = document.createElement("button"); name.type = "button"; name.className = "bingo-member-name"; name.textContent = member.displayName; name.title = "Tap the name to set skill level";
-  name.addEventListener("click", event => { event.stopPropagation(); openBingoSkillDialog(member); });
-  const rating = document.createElement("button"); rating.type = "button"; rating.className = "bingo-skill-rating"; rating.textContent = `${bingoPlayerSkill(member)}/10`; rating.title = `Set ${member.displayName}'s skill rating`;
+  const name = document.createElement("button"); name.type = "button"; name.className = "bingo-member-name"; name.textContent = member.displayName; name.title = assigned ? "Tap to select for another team; tap again to unassign" : "Tap to select, then choose a team";
+  name.addEventListener("click", event => {
+    event.stopPropagation();
+    if (assigned && selectedBingoMember?.username === member.username) { assignBingoMember(member, null); return; }
+    selectedBingoMember = selectedBingoMember?.username === member.username ? null : member; renderBingoTeams();
+    if (selectedBingoMember) setStatus(byId("bingo-status"), `${member.displayName} selected. Tap a team to place them.`);
+  });
+  const rating = document.createElement("button"); rating.type = "button"; rating.className = "bingo-skill-rating"; rating.textContent = `Set skill · ${bingoPlayerSkill(member)}/10`; rating.title = `Set ${member.displayName}'s skill rating`;
   rating.setAttribute("aria-label", `Set ${member.displayName}'s skill rating, ${bingoPlayerSkill(member)} out of 10`);
   rating.addEventListener("click", event => { event.stopPropagation(); openBingoSkillDialog(member); });
   chip.append(name, rating);
@@ -1133,3 +1137,4 @@ function askConfirmation(title, copy, confirmText, danger = false) {
   });
 }
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+
