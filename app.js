@@ -566,7 +566,18 @@ byId("delete-event").addEventListener("click", async () => {
 
 // Bingo board builder and three-team assignment
 const BINGO_STORE_KEY = "womBingoBoards";
+const BINGO_SKILL_KEY = "womBingoSkillRatings";
 const cloneBingoData = value => JSON.parse(JSON.stringify(value));
+function readBingoSkillRatings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BINGO_SKILL_KEY) || "{}");
+    return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+  } catch { return {}; }
+}
+function bingoPlayerSkill(member) {
+  const value = Number(bingoSkillRatings[String(member.username).trim().toLocaleLowerCase()]);
+  return Number.isInteger(value) ? Math.min(10, Math.max(1, value)) : 5;
+}
 function emptyBingoBoard() {
   return {id: null, title: "Clan Bingo", size: "small", cells: Array(25).fill(null), customTiles: [], teams: [{name: "Team 1", members: []}, {name: "Team 2", members: []}, {name: "Team 3", members: []}]};
 }
@@ -615,17 +626,25 @@ function readBingoState() {
 let bingoState = readBingoState();
 let bingoDraft = normalizeBingoBoard(bingoState.draft);
 let bingoDirty = bingoState.dirty;
+let bingoSkillRatings = readBingoSkillRatings();
+let bingoRandomizerUndo = null;
 let selectedBingoMonster = null;
 let selectedBingoCell = null;
 let bingoRoster = [];
 let bingoRosterGroupId = null;
 let selectedBingoMember = null;
+let editingBingoMember = null;
 const supportsBingoDrag = matchMedia("(pointer: fine)").matches;
 const bingoMonsterById = new Map(bosses.map(id => [id, {id, name: pretty(id)}]));
 function persistBingoDraft() {
   bingoState.draft = cloneBingoData(bingoDraft); bingoState.dirty = bingoDirty;
   try { localStorage.setItem(BINGO_STORE_KEY, JSON.stringify(bingoState)); }
   catch { setStatus(byId("bingo-status"), "Could not save this board in browser storage. Export it to keep a copy.", "error"); }
+}
+function clearBingoRandomizerUndo() {
+  if (!bingoRandomizerUndo) return;
+  bingoRandomizerUndo = null;
+  byId("randomize-bingo").textContent = "Randomize";
 }
 function setBingoHint(message) { byId("bingo-board-hint").textContent = message; }
 function fitBingoCellLabels() {
@@ -664,11 +683,12 @@ function renderBingoBoard() {
     cell.addEventListener("click", () => {
       if (selectedBingoMonster) {
         const monster = bingoTileById(selectedBingoMonster);
+        clearBingoRandomizerUndo();
         bingoDraft.cells[index] = {id: monster.id, name: monster.name};
         selectedBingoMonster = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog(); setBingoHint(`${monster.name} placed. Tap another tile to place it, or move a tile by tapping its square and then another square.`); return;
       }
       if (selectedBingoCell !== null) {
-        if (selectedBingoCell !== index) [bingoDraft.cells[index], bingoDraft.cells[selectedBingoCell]] = [bingoDraft.cells[selectedBingoCell], bingoDraft.cells[index]];
+        if (selectedBingoCell !== index) { clearBingoRandomizerUndo(); [bingoDraft.cells[index], bingoDraft.cells[selectedBingoCell]] = [bingoDraft.cells[selectedBingoCell], bingoDraft.cells[index]]; }
         selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); return;
       }
       if (item) { selectedBingoCell = index; renderBingoBoard(); setBingoHint(`${item.name} selected. Tap another square to move it, or remove the selection.`); }
@@ -682,8 +702,8 @@ function renderBingoBoard() {
       event.preventDefault();
       const monsterId = event.dataTransfer.getData("application/x-bingo-monster");
       const sourceIndex = event.dataTransfer.getData("application/x-bingo-cell");
-      if (monsterId && bingoTileById(monsterId)) { const monster = bingoTileById(monsterId); bingoDraft.cells[index] = {id: monster.id, name: monster.name}; }
-      else if (sourceIndex !== "" && Number(sourceIndex) !== index) [bingoDraft.cells[index], bingoDraft.cells[Number(sourceIndex)]] = [bingoDraft.cells[Number(sourceIndex)], bingoDraft.cells[index]];
+      if (monsterId && bingoTileById(monsterId)) { const monster = bingoTileById(monsterId); clearBingoRandomizerUndo(); bingoDraft.cells[index] = {id: monster.id, name: monster.name}; }
+      else if (sourceIndex !== "" && Number(sourceIndex) !== index) { clearBingoRandomizerUndo(); [bingoDraft.cells[index], bingoDraft.cells[Number(sourceIndex)]] = [bingoDraft.cells[Number(sourceIndex)], bingoDraft.cells[index]]; }
       else return;
       selectedBingoMonster = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog();
     });
@@ -743,20 +763,39 @@ function renderBingoTeams() {
     card.append(header, drop); columns.append(card);
   });
 }
+function openBingoSkillDialog(member) {
+  editingBingoMember = member;
+  byId("member-skill-title").textContent = member.displayName;
+  byId("member-skill-range").value = String(bingoPlayerSkill(member));
+  byId("member-skill-value").textContent = `${byId("member-skill-range").value} / 10`;
+  byId("member-skill-dialog").showModal();
+}
+function saveBingoSkill(selectForTeam) {
+  if (!editingBingoMember) return;
+  const key = String(editingBingoMember.username).trim().toLocaleLowerCase();
+  bingoSkillRatings[key] = Number(byId("member-skill-range").value);
+  try { localStorage.setItem(BINGO_SKILL_KEY, JSON.stringify(bingoSkillRatings)); }
+  catch { setStatus(byId("bingo-status"), "Could not save skill ratings in this browser.", "error"); return; }
+  const member = editingBingoMember;
+  selectedBingoMember = selectForTeam ? member : null;
+  byId("member-skill-dialog").close(); editingBingoMember = null; renderBingoTeams();
+  setStatus(byId("bingo-status"), selectForTeam ? `${member.displayName} rated ${bingoPlayerSkill(member)}/10 and selected. Tap a team to place them.` : `${member.displayName} rated ${bingoPlayerSkill(member)}/10.`, "success");
+}
 function makeBingoMemberButton(member, assigned, teamIndex = -1) {
-  const button = document.createElement("button"); button.type = "button"; button.className = "bingo-member" + (selectedBingoMember?.username === member.username ? " selected" : ""); button.draggable = supportsBingoDrag;
-  button.textContent = member.displayName; button.title = assigned ? "Tap once to select; tap again to unassign, or drag to another team" : "Tap to select, then tap a team";
-  button.addEventListener("click", event => {
-    event.stopPropagation();
-    if (assigned && selectedBingoMember?.username === member.username) { assignBingoMember(member, null); return; }
-    selectedBingoMember = selectedBingoMember?.username === member.username ? null : member; renderBingoTeams();
-  });
-  button.addEventListener("dragstart", event => { event.dataTransfer.setData("application/x-bingo-member", member.username); event.dataTransfer.effectAllowed = "move"; });
+  const chip = document.createElement("div"); chip.className = "bingo-member" + (selectedBingoMember?.username === member.username ? " selected" : ""); chip.draggable = supportsBingoDrag;
+  chip.setAttribute("role", "group"); chip.setAttribute("aria-label", `${member.displayName}, skill ${bingoPlayerSkill(member)} out of 10${assigned ? `, assigned to ${bingoDraft.teams[teamIndex].name}` : ", unassigned"}`);
+  const name = document.createElement("button"); name.type = "button"; name.className = "bingo-member-name"; name.textContent = member.displayName; name.title = "Tap the name to set skill level";
+  name.addEventListener("click", event => { event.stopPropagation(); openBingoSkillDialog(member); });
+  const rating = document.createElement("button"); rating.type = "button"; rating.className = "bingo-skill-rating"; rating.textContent = `${bingoPlayerSkill(member)}/10`; rating.title = `Set ${member.displayName}'s skill rating`;
+  rating.setAttribute("aria-label", `Set ${member.displayName}'s skill rating, ${bingoPlayerSkill(member)} out of 10`);
+  rating.addEventListener("click", event => { event.stopPropagation(); openBingoSkillDialog(member); });
+  chip.append(name, rating);
+  chip.addEventListener("dragstart", event => { event.dataTransfer.setData("application/x-bingo-member", member.username); event.dataTransfer.effectAllowed = "move"; });
   if (assigned) {
-    const remove = document.createElement("span"); remove.className = "bingo-member-team-label"; remove.textContent = "×"; remove.setAttribute("aria-hidden", "true"); button.append(remove);
-    button.setAttribute("aria-label", `${member.displayName}, assigned to ${bingoDraft.teams[teamIndex].name}. Tap twice to unassign.`);
+    const remove = document.createElement("button"); remove.type = "button"; remove.className = "bingo-member-team-label"; remove.textContent = "×"; remove.setAttribute("aria-label", `Remove ${member.displayName} from ${bingoDraft.teams[teamIndex].name}`);
+    remove.addEventListener("click", event => { event.stopPropagation(); assignBingoMember(member, null); }); chip.append(remove);
   }
-  return button;
+  return chip;
 }
 function assignBingoMember(member, teamIndex) {
   bingoDraft.teams.forEach(team => { team.members = team.members.filter(player => player.username !== member.username); });
@@ -781,7 +820,7 @@ async function loadBingoRoster() {
       const player = membership.player || {}; const username = player.username || player.displayName; const displayName = player.displayName || player.username;
       return username && displayName ? {username, displayName} : null;
     }).filter(Boolean).sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, {sensitivity: "base"}));
-    bingoRosterGroupId = settings.groupId; byId("bingo-roster-note").textContent = `${bingoRoster.length} members loaded. Drag names into a team, or tap a name and then a team.`;
+    bingoRosterGroupId = settings.groupId; byId("bingo-roster-note").textContent = `${bingoRoster.length} members loaded. Tap a name to set its skill level, then save and select it to place it on a team.`;
     renderBingoTeams(); setStatus(byId("bingo-status"), `Loaded ${bingoRoster.length} Wise Old Man members.`, "success");
   } catch (error) { byId("bingo-roster-note").textContent = `Could not load group members: ${error.message}`; setStatus(byId("bingo-status"), `Could not load members: ${error.message}`, "error"); }
   finally { refresh.disabled = false; refresh.innerHTML = "↻ <span>Refresh</span>"; }
@@ -791,6 +830,34 @@ byId("bingo-teams-mode").addEventListener("click", () => setBingoMode("teams"));
 byId("bingo-search").addEventListener("input", renderBingoCatalog);
 byId("bingo-member-search").addEventListener("input", renderBingoTeams);
 byId("refresh-bingo-roster").addEventListener("click", loadBingoRoster);
+byId("member-skill-range").addEventListener("input", () => { byId("member-skill-value").textContent = `${byId("member-skill-range").value} / 10`; });
+byId("member-skill-close").addEventListener("click", () => byId("member-skill-dialog").close());
+byId("save-skill-rating").addEventListener("click", () => saveBingoSkill(false));
+byId("select-rated-member").addEventListener("click", () => saveBingoSkill(true));
+byId("balance-bingo-teams").addEventListener("click", async () => {
+  if (!settings.groupId) { setStatus(byId("bingo-status"), "Choose your Wise Old Man group in Configuration before balancing teams.", "error"); return; }
+  const button = byId("balance-bingo-teams"); button.disabled = true; button.textContent = "Loading members…";
+  if (!bingoRoster.length || bingoRosterGroupId !== settings.groupId) await loadBingoRoster();
+  if (!bingoRoster.length || bingoRosterGroupId !== settings.groupId) { button.disabled = false; button.textContent = "⚖ Auto-balance teams"; return; }
+  const shuffled = [...bingoRoster];
+  for (let index = shuffled.length - 1; index > 0; index--) { const target = Math.floor(Math.random() * (index + 1)); [shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]]; }
+  shuffled.sort((a, b) => bingoPlayerSkill(b) - bingoPlayerSkill(a));
+  const totals = [0, 0, 0]; const teams = bingoDraft.teams;
+  teams.forEach(team => { team.members = []; });
+  shuffled.forEach(member => {
+    const smallestTeam = Math.min(...teams.map(team => team.members.length));
+    const candidates = teams.map((team, index) => ({team, index})).filter(item => item.team.members.length === smallestTeam);
+    const lowestRating = Math.min(...candidates.map(item => totals[item.index]));
+    const best = candidates.filter(item => totals[item.index] === lowestRating);
+    const chosen = best[Math.floor(Math.random() * best.length)];
+    chosen.team.members.push({username: member.username, displayName: member.displayName});
+    totals[chosen.index] += bingoPlayerSkill(member);
+  });
+  selectedBingoMember = null; bingoDirty = true; persistBingoDraft(); renderBingoTeams();
+  const scoreSummary = totals.map((score, index) => `${teams[index].name}: ${score}`).join(" · ");
+  setStatus(byId("bingo-status"), `Balanced ${shuffled.length} players by skill. Team totals — ${scoreSummary}.`, "success");
+  button.disabled = false; button.textContent = "⚖ Auto-balance teams";
+});
 byId("bingo-title").addEventListener("input", () => { bingoDraft.title = byId("bingo-title").value.slice(0, 60); bingoDirty = true; persistBingoDraft(); });
 byId("bingo-size").addEventListener("change", async () => {
   const nextSize = byId("bingo-size").value;
@@ -811,24 +878,51 @@ byId("bingo-size").addEventListener("change", async () => {
     nextCells[target] = tile;
   });
   if (overflow && !await askConfirmation("Resize to 5 × 5?", `${overflow} tile${overflow === 1 ? " is" : "s are"} outside the smaller board and will be removed.`, "Resize board", true)) { byId("bingo-size").value = oldSize; return; }
+  clearBingoRandomizerUndo();
   bingoDraft.size = nextSize; bingoDraft.cells = nextCells; selectedBingoCell = null; selectedBingoMonster = null; bingoDirty = true;
   persistBingoDraft(); renderBingoBoard(); renderBingoCatalog(); setBingoHint(`Board resized to ${nextDimension} × ${nextDimension}. The center square is reserved for Free Space.`);
 });
 byId("remove-bingo-tile").addEventListener("click", () => {
   if (selectedBingoCell === null) return;
+  clearBingoRandomizerUndo();
   bingoDraft.cells[selectedBingoCell] = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog(); setBingoHint("Square cleared. Choose a monster to fill it.");
 });
 byId("clear-bingo").addEventListener("click", async () => {
   if (!bingoDraft.cells.some(Boolean)) return;
   if (!await askConfirmation("Clear the bingo board?", "This removes every tile from the current draft.", "Clear board", true)) return;
+  clearBingoRandomizerUndo();
   bingoDraft.cells = Array(bingoDimensions[bingoDraft.size] ** 2).fill(null); selectedBingoCell = null; selectedBingoMonster = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog(); setBingoHint("Board cleared. Choose a monster, then tap a square or drag it onto the board.");
+});
+byId("randomize-bingo").addEventListener("click", async () => {
+  if (bingoRandomizerUndo) {
+    bingoDraft.size = bingoRandomizerUndo.size; bingoDraft.cells = bingoRandomizerUndo.cells; bingoRandomizerUndo = null;
+    byId("randomize-bingo").textContent = "Randomize"; selectedBingoCell = null; selectedBingoMonster = null; bingoDirty = true;
+    persistBingoDraft(); renderBingoBoard(); renderBingoCatalog();
+    setBingoHint("Restored the board from before the last random fill.");
+    setStatus(byId("bingo-status"), "Undid the last random board fill.", "success");
+    return;
+  }
+  if (bingoDraft.cells.some(Boolean) && !await askConfirmation("Randomize the bingo board?", "This replaces the current tiles with a fresh random set.", "Randomize board")) return;
+  const dimension = bingoDimensions[bingoDraft.size]; const freeIndex = bingoFreeIndex(bingoDraft.size); const required = dimension * dimension - 1;
+  const pool = [...bosses.map(id => bingoMonsterById.get(id)), ...bingoDraft.customTiles];
+  for (let index = pool.length - 1; index > 0; index--) { const target = Math.floor(Math.random() * (index + 1)); [pool[index], pool[target]] = [pool[target], pool[index]]; }
+  bingoRandomizerUndo = {size: bingoDraft.size, cells: cloneBingoData(bingoDraft.cells)};
+  byId("randomize-bingo").textContent = "Undo randomize";
+  bingoDraft.cells = Array(dimension * dimension).fill(null); let poolIndex = 0;
+  bingoDraft.cells.forEach((_, index) => { if (index !== freeIndex && poolIndex < pool.length) { const tile = pool[poolIndex++]; bingoDraft.cells[index] = {id: tile.id, name: tile.name}; } });
+  selectedBingoCell = null; selectedBingoMonster = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog();
+  const placed = Math.min(required, pool.length);
+  setBingoHint(`Randomized board with ${placed} unique tile${placed === 1 ? "" : "s"}. The center square is Free Space.`);
+  setStatus(byId("bingo-status"), `Added ${placed} random tiles to the ${dimension} × ${dimension} board.`, "success");
 });
 byId("new-bingo").addEventListener("click", async () => {
   if (bingoDirty && !await askConfirmation("Start a new board?", "Your unsaved draft will be replaced. Export it first if you want a separate copy.", "Start new board")) return;
+  clearBingoRandomizerUndo();
   bingoDraft = emptyBingoBoard(); bingoDirty = false; selectedBingoCell = null; selectedBingoMonster = null; selectedBingoMember = null;
   persistBingoDraft(); renderBingoBoard(); renderBingoCatalog(); renderSavedBingoBoards(); renderBingoTeams(); setBingoHint("Choose a monster, then tap a square, or drag it onto the board.");
 });
 byId("save-bingo").addEventListener("click", () => {
+  clearBingoRandomizerUndo();
   bingoDraft.title = byId("bingo-title").value.trim() || "Clan Bingo";
   if (!bingoDraft.id) bingoDraft.id = `bingo-${Date.now().toString(36)}`;
   const saved = cloneBingoData(bingoDraft); const index = bingoState.boards.findIndex(board => board.id === saved.id);
@@ -840,6 +934,7 @@ byId("saved-boards").addEventListener("change", async () => {
   const board = bingoState.boards.find(item => item.id === byId("saved-boards").value);
   if (!board) { byId("delete-bingo").disabled = true; return; }
   if (bingoDirty && !await askConfirmation("Open another board?", "Your unsaved draft will be replaced.", "Open board")) { renderSavedBingoBoards(); return; }
+  clearBingoRandomizerUndo();
   bingoDraft = normalizeBingoBoard(board); bingoDirty = false; selectedBingoCell = null; selectedBingoMonster = null;
   persistBingoDraft(); renderSavedBingoBoards(); renderBingoBoard(); renderBingoCatalog(); renderBingoTeams(); setStatus(byId("bingo-status"), `Opened “${board.title}”.`);
 });
@@ -848,6 +943,7 @@ byId("delete-bingo").addEventListener("click", async () => {
   const board = bingoState.boards.find(item => item.id === boardId);
   if (!board) return;
   if (!await askConfirmation("Delete saved board?", `“${board.title}” will be deleted from this browser.`, "Delete board", true)) return;
+  clearBingoRandomizerUndo();
   bingoState.boards = bingoState.boards.filter(item => item.id !== boardId);
   bingoDraft = emptyBingoBoard(); bingoDirty = false; selectedBingoCell = null; selectedBingoMonster = null;
   persistBingoDraft(); renderSavedBingoBoards(); renderBingoBoard(); renderBingoCatalog(); renderBingoTeams();
@@ -970,6 +1066,7 @@ byId("import-bingo-file").addEventListener("change", async () => {
   try {
     const imported = JSON.parse(await file.text()); const board = imported.board || imported;
     if (!Array.isArray(board.cells) || ![25, 36, 49].includes(board.cells.length)) throw new Error("Choose a 5 × 5 or 7 × 7 bingo board file.");
+    clearBingoRandomizerUndo();
     bingoDraft = normalizeBingoBoard({...board, id: null}); bingoDirty = true; selectedBingoCell = null; selectedBingoMonster = null;
     persistBingoDraft(); renderSavedBingoBoards(); renderBingoBoard(); renderBingoCatalog(); renderBingoTeams();
     setStatus(byId("bingo-status"), `Imported “${bingoDraft.title}”. Save the board to keep it in this browser.`, "success");
