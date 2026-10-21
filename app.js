@@ -344,10 +344,11 @@ function renderRoster() {
     const avatar = document.createElement("span"); avatar.className = "member-avatar";
     const roleIcon = document.createElement("img"); roleIcon.className = "member-role-icon";
     const iconRole = (member.role || "member").toLowerCase() === "member" ? "minion" : (member.role || "member").toLowerCase();
-    roleIcon.src = `https://wiseoldman.net/img/group_roles/${encodeURIComponent(iconRole)}.png`;
-    roleIcon.alt = `${pretty(member.role || "member")} rank icon`; roleIcon.loading = "lazy"; roleIcon.decoding = "async";
-    roleIcon.addEventListener("error", () => { roleIcon.src = "https://wiseoldman.net/img/fallback-icon.png"; roleIcon.alt = "Wise Old Man rank icon"; }, {once: true});
-    avatar.append(roleIcon);
+    roleIcon.src = `./img/group_roles/${encodeURIComponent(iconRole)}.png`;
+    roleIcon.alt = `${pretty(member.role || "member")} rank icon`; roleIcon.decoding = "async";
+    const roleFallback = document.createElement("span"); roleFallback.className = "member-role-fallback"; roleFallback.textContent = pretty(member.role || "member").slice(0, 1).toUpperCase(); roleFallback.hidden = true;
+    roleIcon.addEventListener("error", () => { roleIcon.hidden = true; roleFallback.hidden = false; }, {once: true});
+    avatar.append(roleIcon, roleFallback);
     const nameBlock = document.createElement("div"); nameBlock.className = "member-name"; nameBlock.textContent = member.displayName;
     const sub = document.createElement("span"); sub.className = "member-sub"; sub.textContent = "Tap to see role and time in clan"; nameBlock.append(sub);
     const role = document.createElement("span"); role.className = "member-rank"; role.textContent = pretty(member.role || "member");
@@ -556,18 +557,24 @@ byId("delete-event").addEventListener("click", async () => {
 const BINGO_STORE_KEY = "womBingoBoards";
 const cloneBingoData = value => JSON.parse(JSON.stringify(value));
 function emptyBingoBoard() {
-  return {id: null, title: "Clan Bingo", cells: Array(36).fill(null), teams: [{name: "Team 1", members: []}, {name: "Team 2", members: []}, {name: "Team 3", members: []}]};
+  return {id: null, title: "Clan Bingo", cells: Array(36).fill(null), customTiles: [], teams: [{name: "Team 1", members: []}, {name: "Team 2", members: []}, {name: "Team 3", members: []}]};
+}
+function safeBingoImageUrl(value) {
+  try { const url = new URL(String(value || "")); return url.protocol === "https:" ? url.href : ""; }
+  catch { return ""; }
 }
 function normalizeBingoBoard(board = {}) {
   const cells = Array.isArray(board.cells) ? board.cells : [];
+  const customTiles = Array.isArray(board.customTiles) ? board.customTiles : [];
   const sourceTeams = Array.isArray(board.teams) ? board.teams : [];
   return {
     id: board.id || null,
     title: String(board.title || "Clan Bingo").slice(0, 60),
     cells: Array.from({length: 36}, (_, index) => {
       const cell = cells[index];
-      return cell && typeof cell === "object" && cell.id ? {id: String(cell.id), name: String(cell.name || pretty(cell.id)), imageUrl: String(cell.imageUrl || "")} : null;
+      return cell && typeof cell === "object" && cell.id ? {id: String(cell.id), name: String(cell.name || pretty(cell.id)), imageUrl: safeBingoImageUrl(cell.imageUrl)} : null;
     }),
+    customTiles: customTiles.filter(tile => tile && typeof tile === "object" && tile.id && String(tile.id).startsWith("custom-") && String(tile.name || "").trim()).map(tile => ({id: String(tile.id), name: String(tile.name).slice(0, 32), imageUrl: safeBingoImageUrl(tile.imageUrl)})),
     teams: Array.from({length: 3}, (_, index) => {
       const team = sourceTeams[index] || {};
       const members = Array.isArray(team.members) ? team.members : [];
@@ -595,7 +602,8 @@ const bingoImageObserver = "IntersectionObserver" in window ? new IntersectionOb
   entries.forEach(entry => {
     if (!entry.isIntersecting) return;
     const image = entry.target; bingoImageObserver.unobserve(image);
-    loadWikiImage(image.dataset.wikiTitle).then(url => {
+    const imageRequest = image.dataset.customTile === "true" ? Promise.resolve(image.dataset.customImageUrl || "") : loadWikiImage(image.dataset.wikiTitle);
+    imageRequest.then(url => {
       if (url) { image.src = url; image.hidden = false; image.nextElementSibling.hidden = true; }
     });
   });
@@ -613,14 +621,15 @@ async function loadWikiImage(title) {
   }
   return wikiImagePromises.get(title);
 }
-function addWikiImage(parent, name, className) {
+function addWikiImage(parent, name, className, imageUrl = "", isCustom = false) {
   const frame = document.createElement("span"); frame.className = "bingo-image-frame";
-  const image = document.createElement("img"); image.className = className; image.alt = name; image.loading = "lazy"; image.decoding = "async"; image.hidden = true; image.dataset.wikiTitle = wikiPageTitle(name);
+  const image = document.createElement("img"); image.className = className; image.alt = name; image.loading = "lazy"; image.decoding = "async"; image.hidden = true; image.dataset.wikiTitle = wikiPageTitle(name); image.dataset.customTile = String(isCustom);
+  image.dataset.customImageUrl = safeBingoImageUrl(imageUrl);
   const fallback = document.createElement("span"); fallback.className = "bingo-image-fallback"; fallback.textContent = name.slice(0, 1).toUpperCase();
   image.addEventListener("error", () => { image.hidden = true; fallback.hidden = false; }, {once: true});
   frame.append(image, fallback); parent.append(frame);
-  if (bingoImageObserver) bingoImageObserver.observe(image);
-  else loadWikiImage(image.dataset.wikiTitle).then(url => { if (url) { image.src = url; image.hidden = false; fallback.hidden = true; } });
+  if (bingoImageObserver && (!isCustom || image.dataset.customImageUrl)) bingoImageObserver.observe(image);
+  else if (!isCustom) loadWikiImage(image.dataset.wikiTitle).then(url => { if (url) { image.src = url; image.hidden = false; fallback.hidden = true; } });
 }
 function persistBingoDraft() {
   bingoState.draft = cloneBingoData(bingoDraft); bingoState.dirty = bingoDirty;
@@ -635,12 +644,12 @@ function renderBingoBoard() {
     cell.setAttribute("aria-label", item ? `Square ${index + 1}: ${item.name}` : `Empty square ${index + 1}`);
     cell.dataset.index = String(index); cell.draggable = Boolean(item);
     const number = document.createElement("span"); number.className = "bingo-cell-number"; number.textContent = String(index + 1).padStart(2, "0"); cell.append(number);
-    if (item) { addWikiImage(cell, item.name, "bingo-cell-image"); const name = document.createElement("span"); name.className = "bingo-cell-name"; name.textContent = item.name; cell.append(name); }
+    if (item) { addWikiImage(cell, item.name, "bingo-cell-image", item.imageUrl, item.id.startsWith("custom-")); const name = document.createElement("span"); name.className = "bingo-cell-name"; name.textContent = item.name; cell.append(name); }
     cell.addEventListener("click", () => {
       if (selectedBingoMonster) {
-        const monster = bingoMonsterById.get(selectedBingoMonster);
-        bingoDraft.cells[index] = {id: monster.id, name: monster.name, imageUrl: ""};
-        selectedBingoMonster = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog(); setBingoHint(`${monster.name} placed. Choose another monster or drag one onto a square.`); return;
+        const monster = bingoTileById(selectedBingoMonster);
+        bingoDraft.cells[index] = {id: monster.id, name: monster.name, imageUrl: monster.imageUrl || ""};
+        selectedBingoMonster = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog(); setBingoHint(`${monster.name} placed. Choose another tile or drag one onto a square.`); return;
       }
       if (selectedBingoCell !== null) {
         if (selectedBingoCell !== index) [bingoDraft.cells[index], bingoDraft.cells[selectedBingoCell]] = [bingoDraft.cells[selectedBingoCell], bingoDraft.cells[index]];
@@ -657,7 +666,7 @@ function renderBingoBoard() {
       event.preventDefault();
       const monsterId = event.dataTransfer.getData("application/x-bingo-monster");
       const sourceIndex = event.dataTransfer.getData("application/x-bingo-cell");
-      if (monsterId && bingoMonsterById.has(monsterId)) bingoDraft.cells[index] = {id: monsterId, name: bingoMonsterById.get(monsterId).name, imageUrl: ""};
+      if (monsterId && bingoTileById(monsterId)) { const monster = bingoTileById(monsterId); bingoDraft.cells[index] = {id: monster.id, name: monster.name, imageUrl: monster.imageUrl || ""}; }
       else if (sourceIndex !== "" && Number(sourceIndex) !== index) [bingoDraft.cells[index], bingoDraft.cells[Number(sourceIndex)]] = [bingoDraft.cells[Number(sourceIndex)], bingoDraft.cells[index]];
       else return;
       selectedBingoMonster = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog();
@@ -669,17 +678,18 @@ function renderBingoBoard() {
 }
 function renderBingoCatalog() {
   const list = byId("bingo-catalog"); const query = byId("bingo-search").value.trim().toLocaleLowerCase();
-  const choices = bosses.map(id => bingoMonsterById.get(id)).filter(monster => monster.name.toLocaleLowerCase().includes(query));
+  const choices = [...bosses.map(id => bingoMonsterById.get(id)), ...bingoDraft.customTiles].filter(tile => tile.name.toLocaleLowerCase().includes(query));
   list.replaceChildren();
-  if (!choices.length) { list.innerHTML = '<div class="empty-state">No monsters match that search.</div>'; return; }
+  if (!choices.length) { list.innerHTML = '<div class="empty-state">No tiles match that search.</div>'; return; }
   choices.forEach(monster => {
-    const option = document.createElement("button"); option.type = "button"; option.className = "bingo-monster" + (selectedBingoMonster === monster.id ? " selected" : ""); option.draggable = true;
-    addWikiImage(option, monster.name, "bingo-monster-image"); const label = document.createElement("span"); label.textContent = monster.name; option.append(label);
+    const option = document.createElement("button"); option.type = "button"; option.className = "bingo-monster" + (selectedBingoMonster === monster.id ? " selected" : "") + (monster.id.startsWith("custom-") ? " custom" : ""); option.draggable = true;
+    addWikiImage(option, monster.name, "bingo-monster-image", monster.imageUrl, monster.id.startsWith("custom-")); const label = document.createElement("span"); label.textContent = monster.name; option.append(label);
     option.addEventListener("click", () => { selectedBingoMonster = selectedBingoMonster === monster.id ? null : monster.id; selectedBingoCell = null; renderBingoCatalog(); setBingoHint(selectedBingoMonster ? `${monster.name} selected. Tap a square or drag it onto the board.` : "Choose a monster, then tap a square, or drag it onto the board."); });
     option.addEventListener("dragstart", event => { event.dataTransfer.setData("application/x-bingo-monster", monster.id); event.dataTransfer.effectAllowed = "copy"; });
     list.append(option);
   });
 }
+function bingoTileById(id) { return bingoMonsterById.get(id) || bingoDraft.customTiles.find(tile => tile.id === id) || null; }
 function renderSavedBingoBoards() {
   const select = byId("saved-boards"); const selected = bingoDraft.id || ""; select.replaceChildren(new Option("Choose a saved board", ""));
   bingoState.boards.forEach(board => select.add(new Option(board.title, board.id)));
@@ -804,6 +814,28 @@ byId("import-bingo-file").addEventListener("change", async () => {
     setStatus(byId("bingo-status"), `Imported “${bingoDraft.title}”. Save the board to keep it in this browser.`, "success");
   } catch (error) { setStatus(byId("bingo-status"), `Could not import this board: ${error.message}`, "error"); }
   finally { byId("import-bingo-file").value = ""; }
+});
+const customTileDialog = byId("custom-tile-dialog");
+byId("create-custom-tile").addEventListener("click", () => {
+  byId("custom-tile-form").reset(); setStatus(byId("custom-tile-status"), ""); customTileDialog.showModal();
+  setTimeout(() => byId("custom-tile-name").focus(), 30);
+});
+byId("custom-tile-close").addEventListener("click", () => customTileDialog.close());
+byId("custom-tile-cancel").addEventListener("click", () => customTileDialog.close());
+byId("custom-tile-form").addEventListener("submit", event => {
+  event.preventDefault();
+  const name = byId("custom-tile-name").value.trim(); const rawImageUrl = byId("custom-tile-image").value.trim();
+  if (!name) { setStatus(byId("custom-tile-status"), "Enter a name for this tile.", "error"); return; }
+  let imageUrl = "";
+  if (rawImageUrl) {
+    try { const parsed = new URL(rawImageUrl); if (parsed.protocol !== "https:") throw new Error(); imageUrl = parsed.href; }
+    catch { setStatus(byId("custom-tile-status"), "Use a valid HTTPS image link, or leave the field blank.", "error"); return; }
+  }
+  const tile = {id: `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`, name: name.slice(0, 32), imageUrl};
+  bingoDraft.customTiles.unshift(tile); selectedBingoMonster = tile.id; selectedBingoCell = null; bingoDirty = true; persistBingoDraft();
+  byId("bingo-search").value = ""; renderBingoCatalog(); customTileDialog.close();
+  setBingoHint(`${tile.name} created and selected. Tap a square or drag it onto the board.`);
+  setStatus(byId("bingo-status"), `Custom tile “${tile.name}” added to this board’s library.`, "success");
 });
 byId("bingo-unassigned").addEventListener("dragover", event => event.preventDefault());
 byId("bingo-unassigned").addEventListener("drop", event => {

@@ -45,7 +45,7 @@
         <section class="view active" id="view-create" aria-labelledby="page-title">
           <div class="create-grid">
             <article class="surface form-surface">
-              <div class="surface-heading"><div><p class="overline">NEW COMPETITION</p><h2>Event details</h2></div><span class="heading-mark">01</span></div>
+              <div class="surface-heading"><div><p class="overline">NEW COMPETITION</p><h2>Event details</h2></div></div>
               <form id="event-form" class="form-grid">
                 <label class="field full">Competition title<input id="title" required maxlength="100" placeholder="e.g. VB SoTW - Woodcutting"></label>
                 <label class="field">Event category<select id="kind"></select></label>
@@ -67,7 +67,7 @@
         <section class="view" id="view-pick" aria-labelledby="page-title">
           <div class="picker-layout">
             <article class="surface picker-surface">
-              <div class="surface-heading"><div><p class="overline">RANDOM EVENT</p><h2>What will the clan take on?</h2></div><span class="heading-mark">02</span></div>
+              <div class="surface-heading"><div><p class="overline">RANDOM EVENT</p><h2>What will the clan take on?</h2></div></div>
               <p class="surface-copy">One spin picks from every eligible skill and boss. Skills and bosses each have an even chance.</p>
               <div class="exclusions" id="exclusions">
                 <div class="exclusions-head"><b>Event filters</b><span>Choose what to leave out</span></div>
@@ -128,7 +128,7 @@
                 <div class="bingo-board" id="bingo-board" aria-label="Six by six bingo board"></div>
               </article>
               <aside class="surface bingo-catalog-card">
-                <div class="surface-heading"><div><p class="overline">OSRS WIKI</p><h2>Monster library</h2></div><span class="heading-mark">⌕</span></div>
+                <div class="surface-heading"><div><p class="overline">TILE LIBRARY</p><h2>Monster library</h2></div><button class="button primary compact" id="create-custom-tile">＋ <span>Custom tile</span></button></div>
                 <label class="search-field bingo-search"><span>⌕</span><input id="bingo-search" type="search" placeholder="Find a monster" aria-label="Find a monster"></label>
                 <p class="surface-copy">Monster pictures load from the Old School RuneScape Wiki.</p>
                 <div class="bingo-catalog" id="bingo-catalog"></div>
@@ -168,6 +168,7 @@
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <dialog id="member-dialog" class="dialog"><form method="dialog" id="member-dialog-form"><button class="dialog-close" aria-label="Close">×</button><p class="overline" id="member-dialog-kicker">CLAN ROSTER</p><h2 id="member-dialog-title">Add a member</h2><div id="member-dialog-fields"></div><div class="dialog-actions"><button class="button secondary" value="cancel">Cancel</button><button class="button primary" id="member-dialog-submit" value="submit">Continue</button></div></form></dialog>
+  <dialog id="custom-tile-dialog" class="dialog"><form method="dialog" id="custom-tile-form"><button class="dialog-close" type="button" id="custom-tile-close" aria-label="Close">×</button><p class="overline">BINGO TILE</p><h2>Create a custom tile</h2><label class="field">Tile name<input id="custom-tile-name" required maxlength="32" placeholder="e.g. Get a fire cape"></label><label class="field">Image URL <span class="optional-label">OPTIONAL</span><input id="custom-tile-image" type="url" placeholder="https://…"></label><p class="field-note">Use an HTTPS image link, or leave it blank to show the tile name.</p><div class="status-box" id="custom-tile-status" role="status" aria-live="polite"></div><div class="dialog-actions"><button class="button secondary" type="button" id="custom-tile-cancel">Cancel</button><button class="button primary" type="submit">Add tile</button></div></form></dialog>
   <dialog id="confirm-dialog" class="dialog"><form method="dialog"><p class="overline">CONFIRM ACTION</p><h2 id="confirm-title">Continue?</h2><p id="confirm-copy"></p><div class="dialog-actions"><button class="button secondary" value="cancel">Cancel</button><button class="button danger" id="confirm-yes" value="yes">Confirm</button></div></form></dialog>
   <script src="./app.js"></script>
 </body>
