@@ -370,7 +370,11 @@ function renderRoster() {
   });
 }
 async function loadMembers() {
-  if (!requireGroupAndCode()) return;
+  if (!settings.groupId) {
+    toast("Select your Wise Old Man group in Configuration first.");
+    openView("config");
+    return;
+  }
   const button = byId("refresh-members"); button.disabled = true; button.textContent = "Loading…";
   setStatus(byId("member-status"), "Loading clan members…");
   try {
@@ -387,6 +391,13 @@ async function loadMembers() {
   finally { button.disabled = false; button.innerHTML = "↻ <span>Refresh</span>"; }
 }
 byId("refresh-members").addEventListener("click", loadMembers);
+let membersAutoRefreshAttempted = false;
+document.querySelectorAll('.nav-item[data-view="members"], [data-open-view="members"]').forEach(button => button.addEventListener("click", () => {
+  if (membersAutoRefreshAttempted) return;
+  if (!settings.groupId) { loadMembers(); return; }
+  membersAutoRefreshAttempted = true;
+  loadMembers();
+}));
 byId("member-search").addEventListener("input", renderRoster);
 byId("sort-members").addEventListener("click", () => {
   rosterSort = (rosterSort + 1) % sortModes.length;
@@ -641,7 +652,7 @@ async function loadWikiImage(title) {
 }
 function addWikiImage(parent, name, className, imageUrl = "", isCustom = false) {
   const frame = document.createElement("span"); frame.className = "bingo-image-frame";
-  const image = document.createElement("img"); image.className = className; image.alt = name; image.loading = "lazy"; image.decoding = "async"; image.hidden = isCustom && !safeBingoImageUrl(imageUrl); image.style.visibility = "hidden"; image.dataset.wikiTitle = wikiPageTitle(name); image.dataset.customTile = String(isCustom);
+  const image = document.createElement("img"); image.className = className; image.alt = name; image.loading = "lazy"; image.decoding = "async"; image.referrerPolicy = "no-referrer"; image.hidden = isCustom && !safeBingoImageUrl(imageUrl); image.style.visibility = "hidden"; image.dataset.wikiTitle = wikiPageTitle(name); image.dataset.customTile = String(isCustom);
   image.dataset.customImageUrl = safeBingoImageUrl(imageUrl);
   const fallback = document.createElement("span"); fallback.className = "bingo-image-fallback"; fallback.textContent = name.slice(0, 1).toUpperCase();
   image.addEventListener("error", () => { image.hidden = true; fallback.hidden = false; }, {once: true});
@@ -909,6 +920,9 @@ byId("bingo-unassigned").addEventListener("click", event => {
   if (event.target === byId("bingo-unassigned") && selectedBingoMember) assignBingoMember(selectedBingoMember, null);
 });
 renderSavedBingoBoards(); renderBingoBoard(); renderBingoCatalog(); renderBingoTeams();
+document.querySelectorAll('.nav-item[data-view="bingo"], [data-open-view="bingo"]').forEach(button => button.addEventListener("click", () => {
+  requestAnimationFrame(renderBingoCatalog);
+}));
 
 function askConfirmation(title, copy, confirmText, danger = false) {
   return new Promise(resolve => {
