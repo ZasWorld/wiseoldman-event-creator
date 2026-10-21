@@ -132,7 +132,7 @@
               <aside class="surface bingo-catalog-card">
                 <div class="surface-heading"><div><p class="overline">TILE LIBRARY</p><h2>Monster library</h2></div><button class="button primary compact" id="create-custom-tile">＋ <span>Custom tile</span></button></div>
                 <label class="search-field bingo-search"><span>⌕</span><input id="bingo-search" type="search" placeholder="Find a monster" aria-label="Find a monster"></label>
-                <p class="surface-copy">Monster pictures load from the Old School RuneScape Wiki.</p>
+                <p class="surface-copy">Choose monsters by name. Tiles already on your board are hidden from this list.</p>
                 <div class="bingo-catalog" id="bingo-catalog"></div>
               </aside>
             </div>
@@ -170,7 +170,7 @@
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <dialog id="member-dialog" class="dialog"><form method="dialog" id="member-dialog-form"><button class="dialog-close" aria-label="Close">×</button><p class="overline" id="member-dialog-kicker">CLAN ROSTER</p><h2 id="member-dialog-title">Add a member</h2><div id="member-dialog-fields"></div><div class="dialog-actions"><button class="button secondary" value="cancel">Cancel</button><button class="button primary" id="member-dialog-submit" value="submit">Continue</button></div></form></dialog>
-  <dialog id="custom-tile-dialog" class="dialog"><form method="dialog" id="custom-tile-form"><button class="dialog-close" type="button" id="custom-tile-close" aria-label="Close">×</button><p class="overline">BINGO TILE</p><h2>Create a custom tile</h2><label class="field">Tile name<input id="custom-tile-name" required maxlength="32" placeholder="e.g. Get a fire cape"></label><label class="field">Image URL <span class="optional-label">OPTIONAL</span><input id="custom-tile-image" type="url" placeholder="https://…"></label><p class="field-note">Use an HTTPS image link, or leave it blank to show the tile name.</p><div class="status-box" id="custom-tile-status" role="status" aria-live="polite"></div><div class="dialog-actions"><button class="button secondary" type="button" id="custom-tile-cancel">Cancel</button><button class="button primary" type="submit">Add tile</button></div></form></dialog>
+  <dialog id="custom-tile-dialog" class="dialog"><form method="dialog" id="custom-tile-form"><button class="dialog-close" type="button" id="custom-tile-close" aria-label="Close">×</button><p class="overline">BINGO TILE</p><h2>Create a custom tile</h2><label class="field">Tile name<input id="custom-tile-name" required maxlength="32" placeholder="e.g. Get a fire cape"></label><p class="field-note">The name will be bold and sized to fit the board square.</p><div class="status-box" id="custom-tile-status" role="status" aria-live="polite"></div><div class="dialog-actions"><button class="button secondary" type="button" id="custom-tile-cancel">Cancel</button><button class="button primary" type="submit">Add tile</button></div></form></dialog>
   <dialog id="confirm-dialog" class="dialog"><form method="dialog"><p class="overline">CONFIRM ACTION</p><h2 id="confirm-title">Continue?</h2><p id="confirm-copy"></p><div class="dialog-actions"><button class="button secondary" value="cancel">Cancel</button><button class="button danger" id="confirm-yes" value="yes">Confirm</button></div></form></dialog>
   <script src="./app.js"></script>
 </body>

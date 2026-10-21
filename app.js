@@ -578,10 +578,6 @@ function bingoBoardSize(board = {}) {
   return "large";
 }
 function bingoFreeIndex(size) { const dimension = bingoDimensions[size] || bingoDimensions.small; return (dimension * dimension - 1) / 2; }
-function safeBingoImageUrl(value) {
-  try { const url = new URL(String(value || "")); return url.protocol === "https:" ? url.href : ""; }
-  catch { return ""; }
-}
 function normalizeBingoBoard(board = {}) {
   const cells = Array.isArray(board.cells) ? board.cells : [];
   const size = bingoBoardSize({...board, cells});
@@ -600,9 +596,9 @@ function normalizeBingoBoard(board = {}) {
     cells: Array.from({length: boardCells.length}, (_, index) => {
       if (index === bingoFreeIndex(size)) return null;
       const cell = boardCells[index];
-      return cell && typeof cell === "object" && cell.id ? {id: String(cell.id), name: String(cell.name || pretty(cell.id)), imageUrl: safeBingoImageUrl(cell.imageUrl)} : null;
+      return cell && typeof cell === "object" && cell.id ? {id: String(cell.id), name: String(cell.name || pretty(cell.id))} : null;
     }),
-    customTiles: customTiles.filter(tile => tile && typeof tile === "object" && tile.id && String(tile.id).startsWith("custom-") && String(tile.name || "").trim()).map(tile => ({id: String(tile.id), name: String(tile.name).slice(0, 32), imageUrl: safeBingoImageUrl(tile.imageUrl)})),
+    customTiles: customTiles.filter(tile => tile && typeof tile === "object" && tile.id && String(tile.id).startsWith("custom-") && String(tile.name || "").trim()).map(tile => ({id: String(tile.id), name: String(tile.name).slice(0, 32)})),
     teams: Array.from({length: 3}, (_, index) => {
       const team = sourceTeams[index] || {};
       const members = Array.isArray(team.members) ? team.members : [];
@@ -626,48 +622,6 @@ let bingoRosterGroupId = null;
 let selectedBingoMember = null;
 const supportsBingoDrag = matchMedia("(pointer: fine)").matches;
 const bingoMonsterById = new Map(bosses.map(id => [id, {id, name: pretty(id)}]));
-let bingoImagesEnabled = false;
-function wikiPageTitle(name) {
-  return ({"Chambers Of Xeric": "Chambers of Xeric", "Chambers Of Xeric Challenge Mode": "Chambers of Xeric/Challenge Mode", "Theatre Of Blood": "Theatre of Blood", "Theatre Of Blood Hard Mode": "Theatre of Blood/Hard Mode", "Tombs Of Amascut": "Tombs of Amascut", "Tombs Of Amascut Expert": "Tombs of Amascut/Expert Mode", "Phosanis Nightmare": "Phosani's Nightmare", "Kreearra": "Kree'arra", "Kril Tsutsaroth": "K'ril Tsutsaroth", "Tztok Jad": "TzTok-Jad", "Tzkal Zuk": "TzKal-Zuk", "Sol Heredit": "Sol Heredit"})[name] || name;
-}
-let wikiImagesPromise;
-function normalizeWikiTitle(title) { return String(title).replaceAll("_", " ").trim().toLocaleLowerCase(); }
-async function loadWikiImages() {
-  if (!wikiImagesPromise) {
-    const titles = [...new Set(bosses.map(id => wikiPageTitle(pretty(id))))];
-    const batches = [];
-    for (let index = 0; index < titles.length; index += 50) {
-      const query = new URLSearchParams({action: "query", format: "json", prop: "pageimages", piprop: "thumbnail", pithumbsize: "128", titles: titles.slice(index, index + 50).join("|"), origin: "*"});
-      batches.push(fetch(`https://oldschool.runescape.wiki/api.php?${query}`, {referrerPolicy: "no-referrer"}).then(response => {
-        if (!response.ok) throw new Error("Wiki image lookup failed");
-        return response.json();
-      }));
-    }
-    wikiImagesPromise = Promise.allSettled(batches).then(results => {
-      const images = new Map();
-      results.filter(result => result.status === "fulfilled").forEach(result => Object.values(result.value.query?.pages || {}).forEach(page => {
-        if (page.thumbnail?.source) images.set(normalizeWikiTitle(page.title), page.thumbnail.source);
-      }));
-      if (!images.size) wikiImagesPromise = null;
-      return images;
-    }).catch(() => { wikiImagesPromise = null; return new Map(); });
-  }
-  return wikiImagesPromise;
-}
-async function loadWikiImage(title) {
-  const images = await loadWikiImages();
-  return images.get(normalizeWikiTitle(title)) || "";
-}
-function addWikiImage(parent, name, className, imageUrl = "", isCustom = false) {
-  const frame = document.createElement("span"); frame.className = "bingo-image-frame"; frame.hidden = true;
-  const image = document.createElement("img"); image.className = className; image.alt = name; image.loading = "eager"; image.decoding = "async"; image.referrerPolicy = "no-referrer"; image.hidden = isCustom && !safeBingoImageUrl(imageUrl); image.style.visibility = "hidden"; image.dataset.wikiTitle = wikiPageTitle(name); image.dataset.customTile = String(isCustom);
-  image.dataset.customImageUrl = safeBingoImageUrl(imageUrl);
-  image.addEventListener("error", () => { image.hidden = true; frame.hidden = true; fitBingoCellLabels(); }, {once: true});
-  image.addEventListener("load", () => { frame.hidden = false; image.style.visibility = "visible"; fitBingoCellLabels(); }, {once: true});
-  frame.append(image); parent.append(frame);
-  if (isCustom && image.dataset.customImageUrl) image.src = image.dataset.customImageUrl;
-  else if (!isCustom && bingoImagesEnabled) loadWikiImage(image.dataset.wikiTitle).then(url => { if (url) image.src = url; else { frame.hidden = true; fitBingoCellLabels(); } });
-}
 function persistBingoDraft() {
   bingoState.draft = cloneBingoData(bingoDraft); bingoState.dirty = bingoDirty;
   try { localStorage.setItem(BINGO_STORE_KEY, JSON.stringify(bingoState)); }
@@ -677,16 +631,14 @@ function setBingoHint(message) { byId("bingo-board-hint").textContent = message;
 function fitBingoCellLabels() {
   byId("bingo-board").querySelectorAll(".bingo-cell-name").forEach(label => {
     const cell = label.closest(".bingo-cell");
-    const frame = cell.querySelector(":scope > .bingo-image-frame");
     const style = getComputedStyle(cell);
     const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-    const imageHeight = frame && !frame.hidden ? frame.getBoundingClientRect().height + parseFloat(style.rowGap || style.gap || 0) : 0;
-    const availableHeight = Math.max(8, cell.clientHeight - padding - imageHeight);
-    const largest = Math.min(11, Math.max(6, cell.clientWidth * 0.16));
-    for (let size = largest; size >= 5.5; size -= 0.5) {
+    const availableHeight = Math.max(8, cell.clientHeight - padding - 12);
+    const largest = Math.min(14, Math.max(9, cell.clientWidth * 0.2));
+    for (let size = largest; size >= 6.5; size -= 0.5) {
       label.style.fontSize = `${size}px`;
-      label.style.lineHeight = `${Math.ceil(size * 1.15)}px`;
-      if (label.scrollHeight <= availableHeight + 1) break;
+      label.style.lineHeight = `${Math.ceil(size * 1.08)}px`;
+      if (label.scrollHeight <= availableHeight + 1 && label.scrollWidth <= label.clientWidth + 1) break;
     }
   });
 }
@@ -708,11 +660,11 @@ function renderBingoBoard() {
     }
     cell.dataset.index = String(index); cell.draggable = Boolean(item) && supportsBingoDrag;
     const number = document.createElement("span"); number.className = "bingo-cell-number"; number.textContent = String(index + 1).padStart(2, "0"); cell.append(number);
-    if (item) { addWikiImage(cell, item.name, "bingo-cell-image", item.imageUrl, item.id.startsWith("custom-")); const name = document.createElement("span"); name.className = "bingo-cell-name"; name.textContent = item.name; cell.append(name); }
+    if (item) { const name = document.createElement("span"); name.className = "bingo-cell-name"; name.textContent = item.name; cell.append(name); }
     cell.addEventListener("click", () => {
       if (selectedBingoMonster) {
         const monster = bingoTileById(selectedBingoMonster);
-        bingoDraft.cells[index] = {id: monster.id, name: monster.name, imageUrl: monster.imageUrl || ""};
+        bingoDraft.cells[index] = {id: monster.id, name: monster.name};
         selectedBingoMonster = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog(); setBingoHint(`${monster.name} placed. Tap another tile to place it, or move a tile by tapping its square and then another square.`); return;
       }
       if (selectedBingoCell !== null) {
@@ -730,7 +682,7 @@ function renderBingoBoard() {
       event.preventDefault();
       const monsterId = event.dataTransfer.getData("application/x-bingo-monster");
       const sourceIndex = event.dataTransfer.getData("application/x-bingo-cell");
-      if (monsterId && bingoTileById(monsterId)) { const monster = bingoTileById(monsterId); bingoDraft.cells[index] = {id: monster.id, name: monster.name, imageUrl: monster.imageUrl || ""}; }
+      if (monsterId && bingoTileById(monsterId)) { const monster = bingoTileById(monsterId); bingoDraft.cells[index] = {id: monster.id, name: monster.name}; }
       else if (sourceIndex !== "" && Number(sourceIndex) !== index) [bingoDraft.cells[index], bingoDraft.cells[Number(sourceIndex)]] = [bingoDraft.cells[Number(sourceIndex)], bingoDraft.cells[index]];
       else return;
       selectedBingoMonster = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog();
@@ -754,7 +706,7 @@ function renderBingoCatalog() {
   }
   choices.forEach(monster => {
     const option = document.createElement("button"); option.type = "button"; option.className = "bingo-monster" + (selectedBingoMonster === monster.id ? " selected" : "") + (monster.id.startsWith("custom-") ? " custom" : ""); option.draggable = supportsBingoDrag;
-    addWikiImage(option, monster.name, "bingo-monster-image", monster.imageUrl, monster.id.startsWith("custom-")); const label = document.createElement("span"); label.textContent = monster.name; option.append(label);
+    const label = document.createElement("span"); label.textContent = monster.name; option.append(label);
     option.addEventListener("click", () => { selectedBingoMonster = selectedBingoMonster === monster.id ? null : monster.id; selectedBingoCell = null; renderBingoCatalog(); setBingoHint(selectedBingoMonster ? `${monster.name} selected. Tap a square to place it.` : "Tap a monster to select it, then tap a square to place it. You can also drag tiles on desktop."); });
     option.addEventListener("dragstart", event => { event.dataTransfer.setData("application/x-bingo-monster", monster.id); event.dataTransfer.effectAllowed = "copy"; });
     list.append(option);
@@ -928,14 +880,9 @@ byId("custom-tile-close").addEventListener("click", () => customTileDialog.close
 byId("custom-tile-cancel").addEventListener("click", () => customTileDialog.close());
 byId("custom-tile-form").addEventListener("submit", event => {
   event.preventDefault();
-  const name = byId("custom-tile-name").value.trim(); const rawImageUrl = byId("custom-tile-image").value.trim();
+  const name = byId("custom-tile-name").value.trim();
   if (!name) { setStatus(byId("custom-tile-status"), "Enter a name for this tile.", "error"); return; }
-  let imageUrl = "";
-  if (rawImageUrl) {
-    try { const parsed = new URL(rawImageUrl); if (parsed.protocol !== "https:") throw new Error(); imageUrl = parsed.href; }
-    catch { setStatus(byId("custom-tile-status"), "Use a valid HTTPS image link, or leave the field blank.", "error"); return; }
-  }
-  const tile = {id: `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`, name: name.slice(0, 32), imageUrl};
+  const tile = {id: `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`, name: name.slice(0, 32)};
   bingoDraft.customTiles.unshift(tile); selectedBingoMonster = tile.id; selectedBingoCell = null; bingoDirty = true; persistBingoDraft();
   byId("bingo-search").value = ""; renderBingoCatalog(); customTileDialog.close();
   setBingoHint(`${tile.name} created and selected. Tap a square or drag it onto the board.`);
@@ -955,9 +902,6 @@ if ("ResizeObserver" in window) {
   const bingoBoardResizeObserver = new ResizeObserver(() => requestAnimationFrame(fitBingoCellLabels));
   bingoBoardResizeObserver.observe(byId("bingo-board"));
 }
-document.querySelectorAll('.nav-item[data-view="bingo"], [data-open-view="bingo"]').forEach(button => button.addEventListener("click", () => {
-  requestAnimationFrame(() => { bingoImagesEnabled = true; renderBingoBoard(); renderBingoCatalog(); });
-}));
 
 function askConfirmation(title, copy, confirmText, danger = false) {
   return new Promise(resolve => {
