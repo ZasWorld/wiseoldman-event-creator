@@ -52,10 +52,9 @@
 .bingo-cell-image{width:55%;height:54%;object-fit:contain;image-rendering:auto}
 .bingo-cell-name{display:-webkit-box;max-width:100%;overflow:hidden;color:#e5e8ef;font-size:clamp(7px,.75vw,10px);font-weight:600;line-height:1.15;text-align:center;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .bingo-image-frame{position:relative;display:block;flex:0 0 auto;width:36px;height:36px;overflow:hidden;border-radius:9px;background:#ffffff08}
-.bingo-image-frame img,.bingo-image-fallback{position:absolute;inset:0}
+.bingo-image-frame img{position:absolute;inset:0}
 .bingo-image-frame img{width:100%;height:100%;object-fit:contain;padding:3px}
-.bingo-image-frame img[hidden],.bingo-image-fallback[hidden]{display:none}
-.bingo-image-fallback{display:grid;width:100%;height:100%;place-items:center;color:var(--accent-bright);font:800 16px Manrope,sans-serif}
+.bingo-image-frame img[hidden]{display:none}
 .bingo-catalog-card{display:flex;flex-direction:column}
 .bingo-search{margin-bottom:10px}
 .bingo-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:580px;overflow:auto;padding:2px 4px 2px 0;overscroll-behavior:contain}

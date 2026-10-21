@@ -626,40 +626,47 @@ let bingoRosterGroupId = null;
 let selectedBingoMember = null;
 const supportsBingoDrag = matchMedia("(pointer: fine)").matches;
 const bingoMonsterById = new Map(bosses.map(id => [id, {id, name: pretty(id)}]));
-const wikiImagePromises = new Map();
-const bingoImageObserver = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (!entry.isIntersecting) return;
-    const image = entry.target; bingoImageObserver.unobserve(image);
-    const imageRequest = image.dataset.customTile === "true" ? Promise.resolve(image.dataset.customImageUrl || "") : loadWikiImage(image.dataset.wikiTitle);
-    imageRequest.then(url => {
-      if (url) image.src = url;
-    });
-  });
-}, {rootMargin: "120px", threshold: 0.01}) : null;
+let bingoImagesEnabled = false;
 function wikiPageTitle(name) {
   return ({"Chambers Of Xeric": "Chambers of Xeric", "Chambers Of Xeric Challenge Mode": "Chambers of Xeric/Challenge Mode", "Theatre Of Blood": "Theatre of Blood", "Theatre Of Blood Hard Mode": "Theatre of Blood/Hard Mode", "Tombs Of Amascut": "Tombs of Amascut", "Tombs Of Amascut Expert": "Tombs of Amascut/Expert Mode", "Phosanis Nightmare": "Phosani's Nightmare", "Kreearra": "Kree'arra", "Kril Tsutsaroth": "K'ril Tsutsaroth", "Tztok Jad": "TzTok-Jad", "Tzkal Zuk": "TzKal-Zuk", "Sol Heredit": "Sol Heredit"})[name] || name;
 }
-async function loadWikiImage(title) {
-  if (!wikiImagePromises.has(title)) {
-    const query = new URLSearchParams({action: "query", format: "json", prop: "pageimages", piprop: "thumbnail", pithumbsize: "128", titles: title, origin: "*"});
-    wikiImagePromises.set(title, fetch(`https://oldschool.runescape.wiki/api.php?${query}`).then(response => {
-      if (!response.ok) throw new Error("Wiki image unavailable");
-      return response.json();
-    }).then(data => Object.values(data.query?.pages || {})[0]?.thumbnail?.source || "").catch(() => ""));
+let wikiImagesPromise;
+function normalizeWikiTitle(title) { return String(title).replaceAll("_", " ").trim().toLocaleLowerCase(); }
+async function loadWikiImages() {
+  if (!wikiImagesPromise) {
+    const titles = [...new Set(bosses.map(id => wikiPageTitle(pretty(id))))];
+    const batches = [];
+    for (let index = 0; index < titles.length; index += 50) {
+      const query = new URLSearchParams({action: "query", format: "json", prop: "pageimages", piprop: "thumbnail", pithumbsize: "128", titles: titles.slice(index, index + 50).join("|"), origin: "*"});
+      batches.push(fetch(`https://oldschool.runescape.wiki/api.php?${query}`, {referrerPolicy: "no-referrer"}).then(response => {
+        if (!response.ok) throw new Error("Wiki image lookup failed");
+        return response.json();
+      }));
+    }
+    wikiImagesPromise = Promise.allSettled(batches).then(results => {
+      const images = new Map();
+      results.filter(result => result.status === "fulfilled").forEach(result => Object.values(result.value.query?.pages || {}).forEach(page => {
+        if (page.thumbnail?.source) images.set(normalizeWikiTitle(page.title), page.thumbnail.source);
+      }));
+      if (!images.size) wikiImagesPromise = null;
+      return images;
+    }).catch(() => { wikiImagesPromise = null; return new Map(); });
   }
-  return wikiImagePromises.get(title);
+  return wikiImagesPromise;
+}
+async function loadWikiImage(title) {
+  const images = await loadWikiImages();
+  return images.get(normalizeWikiTitle(title)) || "";
 }
 function addWikiImage(parent, name, className, imageUrl = "", isCustom = false) {
   const frame = document.createElement("span"); frame.className = "bingo-image-frame";
-  const image = document.createElement("img"); image.className = className; image.alt = name; image.loading = "lazy"; image.decoding = "async"; image.referrerPolicy = "no-referrer"; image.hidden = isCustom && !safeBingoImageUrl(imageUrl); image.style.visibility = "hidden"; image.dataset.wikiTitle = wikiPageTitle(name); image.dataset.customTile = String(isCustom);
+  const image = document.createElement("img"); image.className = className; image.alt = name; image.loading = "eager"; image.decoding = "async"; image.referrerPolicy = "no-referrer"; image.hidden = isCustom && !safeBingoImageUrl(imageUrl); image.style.visibility = "hidden"; image.dataset.wikiTitle = wikiPageTitle(name); image.dataset.customTile = String(isCustom);
   image.dataset.customImageUrl = safeBingoImageUrl(imageUrl);
-  const fallback = document.createElement("span"); fallback.className = "bingo-image-fallback"; fallback.textContent = name.slice(0, 1).toUpperCase();
-  image.addEventListener("error", () => { image.hidden = true; fallback.hidden = false; }, {once: true});
-  image.addEventListener("load", () => { image.style.visibility = "visible"; fallback.hidden = true; }, {once: true});
-  frame.append(image, fallback); parent.append(frame);
-  if (bingoImageObserver && (!isCustom || image.dataset.customImageUrl)) bingoImageObserver.observe(image);
-  else if (!isCustom) loadWikiImage(image.dataset.wikiTitle).then(url => { if (url) image.src = url; });
+  image.addEventListener("error", () => { image.hidden = true; }, {once: true});
+  image.addEventListener("load", () => { image.style.visibility = "visible"; }, {once: true});
+  frame.append(image); parent.append(frame);
+  if (isCustom && image.dataset.customImageUrl) image.src = image.dataset.customImageUrl;
+  else if (!isCustom && bingoImagesEnabled) loadWikiImage(image.dataset.wikiTitle).then(url => { if (url) image.src = url; });
 }
 function persistBingoDraft() {
   bingoState.draft = cloneBingoData(bingoDraft); bingoState.dirty = bingoDirty;
@@ -718,9 +725,15 @@ function renderBingoBoard() {
 }
 function renderBingoCatalog() {
   const list = byId("bingo-catalog"); const query = byId("bingo-search").value.trim().toLocaleLowerCase();
-  const choices = [...bosses.map(id => bingoMonsterById.get(id)), ...bingoDraft.customTiles].filter(tile => tile.name.toLocaleLowerCase().includes(query));
+  const placed = new Set(bingoDraft.cells.filter(Boolean).map(tile => tile.id));
+  const available = [...bosses.map(id => bingoMonsterById.get(id)), ...bingoDraft.customTiles].filter(tile => !placed.has(tile.id));
+  const choices = available.filter(tile => tile.name.toLocaleLowerCase().includes(query));
   list.replaceChildren();
-  if (!choices.length) { list.innerHTML = '<div class="empty-state">No tiles match that search.</div>'; return; }
+  if (!choices.length) {
+    const empty = document.createElement("div"); empty.className = "empty-state";
+    empty.textContent = available.length ? "No tiles match that search." : "All tiles are on the board. Clear a square to add one back.";
+    list.append(empty); return;
+  }
   choices.forEach(monster => {
     const option = document.createElement("button"); option.type = "button"; option.className = "bingo-monster" + (selectedBingoMonster === monster.id ? " selected" : "") + (monster.id.startsWith("custom-") ? " custom" : ""); option.draggable = supportsBingoDrag;
     addWikiImage(option, monster.name, "bingo-monster-image", monster.imageUrl, monster.id.startsWith("custom-")); const label = document.createElement("span"); label.textContent = monster.name; option.append(label);
@@ -833,7 +846,7 @@ byId("bingo-size").addEventListener("change", async () => {
 });
 byId("remove-bingo-tile").addEventListener("click", () => {
   if (selectedBingoCell === null) return;
-  bingoDraft.cells[selectedBingoCell] = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); setBingoHint("Square cleared. Choose a monster to fill it.");
+  bingoDraft.cells[selectedBingoCell] = null; selectedBingoCell = null; bingoDirty = true; persistBingoDraft(); renderBingoBoard(); renderBingoCatalog(); setBingoHint("Square cleared. Choose a monster to fill it.");
 });
 byId("clear-bingo").addEventListener("click", async () => {
   if (!bingoDraft.cells.some(Boolean)) return;
@@ -921,7 +934,7 @@ byId("bingo-unassigned").addEventListener("click", event => {
 });
 renderSavedBingoBoards(); renderBingoBoard(); renderBingoCatalog(); renderBingoTeams();
 document.querySelectorAll('.nav-item[data-view="bingo"], [data-open-view="bingo"]').forEach(button => button.addEventListener("click", () => {
-  requestAnimationFrame(renderBingoCatalog);
+  requestAnimationFrame(() => { bingoImagesEnabled = true; renderBingoBoard(); renderBingoCatalog(); });
 }));
 
 function askConfirmation(title, copy, confirmText, danger = false) {
