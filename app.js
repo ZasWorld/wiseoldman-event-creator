@@ -659,14 +659,14 @@ async function loadWikiImage(title) {
   return images.get(normalizeWikiTitle(title)) || "";
 }
 function addWikiImage(parent, name, className, imageUrl = "", isCustom = false) {
-  const frame = document.createElement("span"); frame.className = "bingo-image-frame";
+  const frame = document.createElement("span"); frame.className = "bingo-image-frame"; frame.hidden = true;
   const image = document.createElement("img"); image.className = className; image.alt = name; image.loading = "eager"; image.decoding = "async"; image.referrerPolicy = "no-referrer"; image.hidden = isCustom && !safeBingoImageUrl(imageUrl); image.style.visibility = "hidden"; image.dataset.wikiTitle = wikiPageTitle(name); image.dataset.customTile = String(isCustom);
   image.dataset.customImageUrl = safeBingoImageUrl(imageUrl);
-  image.addEventListener("error", () => { image.hidden = true; }, {once: true});
-  image.addEventListener("load", () => { image.style.visibility = "visible"; }, {once: true});
+  image.addEventListener("error", () => { image.hidden = true; frame.hidden = true; fitBingoCellLabels(); }, {once: true});
+  image.addEventListener("load", () => { frame.hidden = false; image.style.visibility = "visible"; fitBingoCellLabels(); }, {once: true});
   frame.append(image); parent.append(frame);
   if (isCustom && image.dataset.customImageUrl) image.src = image.dataset.customImageUrl;
-  else if (!isCustom && bingoImagesEnabled) loadWikiImage(image.dataset.wikiTitle).then(url => { if (url) image.src = url; });
+  else if (!isCustom && bingoImagesEnabled) loadWikiImage(image.dataset.wikiTitle).then(url => { if (url) image.src = url; else { frame.hidden = true; fitBingoCellLabels(); } });
 }
 function persistBingoDraft() {
   bingoState.draft = cloneBingoData(bingoDraft); bingoState.dirty = bingoDirty;
@@ -674,6 +674,22 @@ function persistBingoDraft() {
   catch { setStatus(byId("bingo-status"), "Could not save this board in browser storage. Export it to keep a copy.", "error"); }
 }
 function setBingoHint(message) { byId("bingo-board-hint").textContent = message; }
+function fitBingoCellLabels() {
+  byId("bingo-board").querySelectorAll(".bingo-cell-name").forEach(label => {
+    const cell = label.closest(".bingo-cell");
+    const frame = cell.querySelector(":scope > .bingo-image-frame");
+    const style = getComputedStyle(cell);
+    const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    const imageHeight = frame && !frame.hidden ? frame.getBoundingClientRect().height + parseFloat(style.rowGap || style.gap || 0) : 0;
+    const availableHeight = Math.max(8, cell.clientHeight - padding - imageHeight);
+    const largest = Math.min(11, Math.max(6, cell.clientWidth * 0.16));
+    for (let size = largest; size >= 5.5; size -= 0.5) {
+      label.style.fontSize = `${size}px`;
+      label.style.lineHeight = `${Math.ceil(size * 1.15)}px`;
+      if (label.scrollHeight <= availableHeight + 1) break;
+    }
+  });
+}
 function renderBingoBoard() {
   const board = byId("bingo-board"); board.replaceChildren();
   const dimension = bingoDimensions[bingoDraft.size] || bingoDimensions.small;
@@ -685,6 +701,7 @@ function renderBingoBoard() {
   bingoDraft.cells.forEach((item, index) => {
     const cell = document.createElement("button"); cell.type = "button"; cell.className = "bingo-cell" + (selectedBingoCell === index ? " selected" : "") + (item ? " filled" : "");
     cell.setAttribute("aria-label", item ? `Square ${index + 1}: ${item.name}` : `Empty square ${index + 1}`);
+    if (item) cell.title = item.name;
     if (index === freeIndex) {
       cell.classList.add("free-space"); cell.disabled = true; cell.draggable = false; cell.setAttribute("aria-label", "Free space");
       const label = document.createElement("span"); label.className = "bingo-free-label"; label.textContent = "FREE SPACE"; cell.append(label); board.append(cell); return;
@@ -722,6 +739,7 @@ function renderBingoBoard() {
   });
   byId("bingo-title").value = bingoDraft.title;
   byId("remove-bingo-tile").disabled = selectedBingoCell === null;
+  fitBingoCellLabels();
 }
 function renderBingoCatalog() {
   const list = byId("bingo-catalog"); const query = byId("bingo-search").value.trim().toLocaleLowerCase();
@@ -933,6 +951,10 @@ byId("bingo-unassigned").addEventListener("click", event => {
   if (event.target === byId("bingo-unassigned") && selectedBingoMember) assignBingoMember(selectedBingoMember, null);
 });
 renderSavedBingoBoards(); renderBingoBoard(); renderBingoCatalog(); renderBingoTeams();
+if ("ResizeObserver" in window) {
+  const bingoBoardResizeObserver = new ResizeObserver(() => requestAnimationFrame(fitBingoCellLabels));
+  bingoBoardResizeObserver.observe(byId("bingo-board"));
+}
 document.querySelectorAll('.nav-item[data-view="bingo"], [data-open-view="bingo"]').forEach(button => button.addEventListener("click", () => {
   requestAnimationFrame(() => { bingoImagesEnabled = true; renderBingoBoard(); renderBingoCatalog(); });
 }));
